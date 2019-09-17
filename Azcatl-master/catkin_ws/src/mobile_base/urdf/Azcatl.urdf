@@ -1,0 +1,14 @@
+<robot name="Azcatl">
+	<!--                                         Cilindro rojo			     -->
+	<link name="base_link">
+		<visual>
+			<origin xyz="-0. 0 0.063" rpy="0 0 1.5707"/> 				<!-- No se cierra por la diagonal del final -->
+			<geometry>
+		<!--		<cylinder length = "0.09" radius="0.06325"/> -->
+				<mesh filename="file:/home/gerardo/Modelos/Azcatl.stl"/>
+				
+			</geometry>	
+			<material name="black"> <color  rgba="1 1 1 1"/> </material>
+		</visual>
+	</link>
+</robot>

@@ -1,0 +1,6 @@
+<launch>
+	<param name="robot_description" command="cat $(find mobile_base)/urdf/Azcatl.urdf"/>
+	<node name="robot_state_publisher" pkg="robot_state_publisher" type="state_publisher"/>
+	<node name="mobile_base_node" type="mobile_base_node" pkg="mobile_base" output="screen"/>
+	<node name="simple_move_node" type="simple_move_node" pkg="simple_move" output="screen"/>
+</launch>
