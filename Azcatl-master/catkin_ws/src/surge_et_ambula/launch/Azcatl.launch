@@ -1,6 +1,13 @@
 <launch>
 	<param name="robot_description" command="cat $(find mobile_base)/urdf/Azcatl.urdf"/>
-	<node name="robot_state_publisher" pkg="robot_state_publisher" type="state_publisher"/>
+	<node name="robot_state_publisher" type="state_publisher" pkg="robot_state_publisher"/>
+	<node name="serial_node" type="serial_node.py" pkg="rosserial_python">
+		<param name="port" value="/dev/ttyUSB0"/>
+		<param name="baud" value="115200"/>
+	</node>
 	<node name="mobile_base_node" type="mobile_base_node" pkg="mobile_base" output="screen"/>
 	<node name="simple_move_node" type="simple_move_node" pkg="simple_move" output="screen"/>
+	<!-- <node name="carrito_control_node" type="carrito_node" pkg="carrito_control" output="screen"/> -->
+	<node name="hokuyo_node" type="hokuyo_node.py" pkg="hokuyo" output="screen"/>
+	<node name="webcam_man_node" type="webcam_man_pub" pkg="webcam_man" output="screen"/>
 </launch>
