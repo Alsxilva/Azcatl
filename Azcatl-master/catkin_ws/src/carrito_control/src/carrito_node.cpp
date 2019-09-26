@@ -151,7 +151,7 @@ int main(int argc, char ** argv){
 	float dist,angle;
 	while(ros::ok()){
 		hokuyoFlag = false;
-		printf("Esperando nuevos datos de Hokuyo, y de la c�mara! \n");
+		printf("Esperando nuevos datos de Hokuyo, y de la cÃmara! \n");
 		while(!hokuyoFlag && ros::ok()){
 			ros::spinOnce();
 			rate.sleep();
@@ -170,7 +170,7 @@ int main(int argc, char ** argv){
 		//hokuyo + camara ? cambio de color objetivo
 		/*switch(nextState){
 			case 0:
-				//Izquierda 90°
+				//Izquierda 90Â°
 				angle = 85;
 				dist = 0;
 				nextState = 1;
@@ -182,7 +182,7 @@ int main(int argc, char ** argv){
 				nextState = 2;
 				break;
 			case 2:
-				//regresa 90�
+				//regresa 90Â
 				angle = -85;
 				dist = 0;
 				nextState = 0;

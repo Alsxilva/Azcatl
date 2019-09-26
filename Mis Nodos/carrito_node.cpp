@@ -6,7 +6,10 @@ Agosto 2019
 /*--------------------------------------------------------------*/
 
 #include <ros/ros.h>
+#include <std_msgs/Int8.h>
 #include <std_msgs/Int64.h>
+#include <std_msgs/Float32.h>
+#include <sensor_msgs/LaserScan.h>
 #include <std_msgs/Float32MultiArray.h>
 	
 #define k 			0.1				//Constante de desfase 
@@ -20,18 +23,159 @@ Agosto 2019
 bool act = false;			 		//Bool para impedir que se avance mientras se gira y viceversa.
 volatile float enc[2]={0.0,0.0};
 
+/*---------------------Variables para deteccion de color---------------------*/	
+
+int posColor;
+float percentColor;
+bool flagPosColor = false;
+bool flagPercentColor = false;
+
+void callbackPosColor(const std_msgs::Int8::ConstPtr &msg){
+	posColor = msg -> data;
+	flagPosColor = true;
+}
+void callbackPercentColor(const std_msgs::Float32::ConstPtr &msg){
+	percentColor = msg -> data;
+	flagPercentColor = true;
+}
+
 /*------------------------------------Encoders------------------------------------*/	
 
 void callbackDer(const std_msgs::Int64::ConstPtr& msg){
 	enc[1] = (float)(msg -> data)/ppr;							//Encoder 1 = Encoder derecho
-	printf("%li\n",msg -> data);
+	printf("%li\n",msg -> data);								//Imprime el valor (float) del encoder
 }
 
 void callbackIzq(const std_msgs::Int64::ConstPtr& msg){
 	enc[0] = (float)(msg -> data)/ppr;							//Encoder 0 = Encoder izquierdo
-	printf("%li\n",msg -> data);
+	printf("%li\n",msg -> data);								//Imprime el valor (float) del encoder
 	act = true;
 }
+
+/*------------------------------------Hokuyo------------------------------------*/	
+
+/*--------------------------------Variables--------------------------------*/	
+
+
+#define maxRange   80								//Rango de lecturas para el hokuyo
+#define minRange  -80								
+#define intervalRange  10 							//Grados para cada intervalo
+
+float umbral   =  0.2;								
+float promLeft =	0;
+float promRight=	0;
+float promFront=	0;
+float values[2][(maxRange-minRange)/intervalRange];	//Dos arreglos de 16 valores cada uno
+
+bool hokuyoFlag = false;
+bool centralb,centralDerb,centralIzqb,derechab,izquierdab;
+
+/*--------------------------------Funcion--------------------------------*/	
+
+void callbackHokuyo(const sensor_msgs::LaserScan::ConstPtr &msg){
+
+	int size = ceil((msg -> angle_max - msg -> angle_min) / msg -> angle_increment);	//Redondea al entero de arriba mas cercano
+	//	size = 16 = 80 - (-80) / 10 
+
+	float sumLeft  = 0;
+	float sumFront = 0;
+	float sumRight = 0;	
+	float values[size];
+	
+	for(int i = 0 ; i < size ; i++){
+		float val = msg -> ranges[i];
+		values[i] = msg -> ranges[i];
+		
+		if(val <= 0.01 && i!=0)
+			values[i] = 1.2 * values[i-1];
+			//float angle = (msg->angle_min+(msg->angle_increment*i))*180.0/3.1415926;
+	}
+
+	/*-------------------------------Region central-------------------------------*/
+
+	float central[] ={10,20};
+	float centralOut = 0;
+	int centrali[2];
+	centrali[0] = floor((((3.1415926*central[0])/180.0)-msg->angle_min)/(msg->angle_increment));
+	centrali[1] = floor((((3.1415926*central[1])/180.0)-msg->angle_min)/(msg->angle_increment));	
+	for(int i = centrali[0]; i<centrali[1] ; i++)	
+		centralOut += values[i];
+	centralOut /= (float)(centrali[1]-centrali[0]);
+	centralb = true;
+	if(centralOut < umbral)
+		centralb = false;
+	//printf("Central: %.4f\t",centralOut);
+
+	/*---------------------------Region Central-Izquierda---------------------------*/
+
+	float centralIzq[] ={20,30};
+	float centralIzqOut = 0;
+	int centralIzqi[2];
+	centralIzqi[0] = ceil((((3.1415926*centralIzq[0])/180.0)-msg->angle_min)/(msg->angle_increment));
+	centralIzqi[1] = floor((((3.1415926*centralIzq[1])/180.0)-msg->angle_min)/(msg->angle_increment));	
+	for(int i = centralIzqi[0]; i<centralIzqi[1] ; i++)	
+		centralIzqOut += values[i];
+	centralIzqOut /= (float)(centralIzqi[1]-centralIzqi[0]);
+	centralIzqb = true;
+	if(centralIzqOut < umbral)
+		centralIzqb = false;
+	//printf("Central Izq: %.4f\t",centralIzqOut);
+
+	/*---------------------------Region Central-Derecha---------------------------*/
+
+	float centralDer[] = {0,10};
+	float centralDerOut = 0;
+	int centralDeri[2];
+	centralDeri[0] = floor((((3.1415926*centralDer[0])/180.0)-msg->angle_min)/(msg->angle_increment));
+	centralDeri[1] = floor((((3.1415926*centralDer[1])/180.0)-msg->angle_min)/(msg->angle_increment));	
+	for(int i = centralDeri[0]; i<centralDeri[1] ; i++){	
+		centralDerOut += values[i];
+		//printf("%f \n",values[i]);
+	}
+	centralDerOut /= (float)(centralDeri[1]-centralDeri[0]);
+	centralDerb = true;
+	if(centralDerOut < umbral)
+		centralDerb = false;
+	//printf("Central Der: %.4f \t",centralDerOut);
+
+	/*---------------------------Region Izquierda---------------------------*/
+
+	float izquierda[] ={80,90};
+	float izquierdaOut = 0;
+	int izquierdai[2];
+	izquierdai[0] = floor((((3.1415926*izquierda[0])/180.0)-msg->angle_min)/(msg->angle_increment));
+	izquierdai[1] = floor((((3.1415926*izquierda[1])/180.0)-msg->angle_min)/(msg->angle_increment));	
+	for(int i = izquierdai[0]; i<izquierdai[1] ; i++)	
+		izquierdaOut += values[i];
+	izquierdaOut /= (float)(izquierdai[1]-izquierdai[0]);
+	izquierdab = true;
+	if(izquierdaOut < umbral)
+		izquierdab = false;
+	//printf("Izquierda: %.4f\t",izquierdaOut);
+
+	/*---------------------------Region Derecha---------------------------*/
+
+	float derecha[] ={-50,-60};
+	float derechaOut = 0;
+	int derechai[2];
+	derechai[0] = floor((((3.1415926*derecha[0])/180.0)-msg->angle_min)/(msg->angle_increment));
+	derechai[1] = floor((((3.1415926*derecha[1])/180.0)-msg->angle_min)/(msg->angle_increment));
+	for(int i = derechai[1]; i<derechai[0] ; i++)	
+		derechaOut += values[i];
+	derechaOut /= (float)(derechai[0]-derechai[1]);
+	derechab = true;
+	if(derechaOut < umbral)
+		derechab = false;
+	//printf("Derecha: %f\t",derechaOut);
+
+	/*---------------------------EndRangos---------------------------*/	
+
+	//printf("\n");
+	hokuyoFlag = true;
+
+}
+
+int nextState = 0;
 
 /*------------------------------------Inicio del Main------------------------------------*/	
 
