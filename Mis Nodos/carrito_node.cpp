@@ -65,7 +65,7 @@ float umbral   =  0.2;
 float promLeft =	0;
 float promRight=	0;
 float promFront=	0;
-float values[2][(maxRange-minRange)/intervalRange];	//Dos arreglos de 16 valores cada uno
+float values[2][(maxRange - minRange) / intervalRange];	//Dos arreglos de 16 valores cada uno
 
 bool hokuyoFlag = false;
 bool centralb,centralDerb,centralIzqb,derechab,izquierdab;
@@ -75,7 +75,6 @@ bool centralb,centralDerb,centralIzqb,derechab,izquierdab;
 void callbackHokuyo(const sensor_msgs::LaserScan::ConstPtr &msg){
 
 	int size = ceil((msg -> angle_max - msg -> angle_min) / msg -> angle_increment);	//Redondea al entero de arriba mas cercano
-	//	size = 16 = 80 - (-80) / 10 
 
 	float sumLeft  = 0;
 	float sumFront = 0;
@@ -93,17 +92,22 @@ void callbackHokuyo(const sensor_msgs::LaserScan::ConstPtr &msg){
 
 	/*-------------------------------Region central-------------------------------*/
 
-	float central[] ={10,20};
-	float centralOut = 0;
 	int centrali[2];
-	centrali[0] = floor((((3.1415926*central[0])/180.0)-msg->angle_min)/(msg->angle_increment));
-	centrali[1] = floor((((3.1415926*central[1])/180.0)-msg->angle_min)/(msg->angle_increment));	
-	for(int i = centrali[0]; i<centrali[1] ; i++)	
+	float centralOut = 0;
+	float central[]  = {10,20};
+	
+	centrali[0] = floor((((3.1415926 * central[0]) / 180.0) - msg->angle_min) / (msg->angle_increment));	//Redondea al entero de abajo mas cercano
+	centrali[1] = floor((((3.1415926 * central[1]) / 180.0) - msg->angle_min) / (msg->angle_increment));	
+	
+	for(int i = centrali[0]; i < centrali[1]; i++)	
 		centralOut += values[i];
-	centralOut /= (float)(centrali[1]-centrali[0]);
+	
+	centralOut /= (float)(centrali[1] - centrali[0]);
 	centralb = true;
+	
 	if(centralOut < umbral)
 		centralb = false;
+	
 	//printf("Central: %.4f\t",centralOut);
 
 	/*---------------------------Region Central-Izquierda---------------------------*/
