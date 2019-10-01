@@ -23,22 +23,6 @@ Agosto 2019
 bool act = false;			 		//Bool para impedir que se avance mientras se gira y viceversa.
 volatile float enc[2]={0.0,0.0};
 
-/*---------------------Variables para deteccion de color---------------------*/	
-
-int posColor;
-float percentColor;
-bool flagPosColor = false;
-bool flagPercentColor = false;
-
-void callbackPosColor(const std_msgs::Int8::ConstPtr &msg){
-	posColor = msg -> data;
-	flagPosColor = true;
-}
-void callbackPercentColor(const std_msgs::Float32::ConstPtr &msg){
-	percentColor = msg -> data;
-	flagPercentColor = true;
-}
-
 /*------------------------------------Encoders------------------------------------*/	
 
 void callbackDer(const std_msgs::Int64::ConstPtr& msg){
@@ -66,9 +50,9 @@ float promLeft =	0;
 float promRight=	0;
 float promFront=	0;
 float values[2][(maxRange - minRange) / intervalRange];	//Dos arreglos de 16 valores cada uno
-
+	
 bool hokuyoFlag = false;
-bool centralb,centralDerb,centralIzqb,derechab,izquierdab;
+bool central_flag, centralDer_flag, centralIzq_flag, derecha_flag, izquierda_flag;		//Banderas para determinar zona de obstaculo
 
 /*--------------------------------Funcion--------------------------------*/	
 
@@ -104,10 +88,10 @@ void callbackHokuyo(const sensor_msgs::LaserScan::ConstPtr &msg){
 		centralOut += values[i];
 	
 	centralOut /= (float)(centrali[1] - centrali[0]);
-	centralb = true;
+	central_flag = true;
 	
 	if(centralOut < umbral)
-		centralb = false;
+		central_flag = false;
 	
 	printf("Central: %.4f\t",centralOut);
 
@@ -122,11 +106,12 @@ void callbackHokuyo(const sensor_msgs::LaserScan::ConstPtr &msg){
 	
 	for(int i = centralIzqi[0]; i < centralIzqi[1] ; i++)	
 		centralIzqOut += values[i];
+
 	centralIzqOut /= (float)(centralIzqi[1] - centralIzqi[0]);
-	centralIzqb = true;
+	centralIzq_flag = true;
 	
 	if(centralIzqOut < umbral)
-		centralIzqb = false;
+		centralIzq_flag = false;
 	
 	printf("Central Izq: %.4f\t",centralIzqOut);
 
@@ -139,15 +124,14 @@ void callbackHokuyo(const sensor_msgs::LaserScan::ConstPtr &msg){
 	centralDeri[0] = floor((((pi * centralDer[0]) / 180.0) - msg->angle_min) / (msg->angle_increment));	//floor((((pi *  0) / 180) - 1.824262524000698) / 0.006144178739745) = floor(-296.9090909) = -296
 	centralDeri[1] = floor((((pi * centralDer[1]) / 180.0) - msg->angle_min) / (msg->angle_increment));	//floor((((pi * 10) / 180) - 1.824262524000698) / 0.006144178739745) = floor(-268.5028647) = -268
 
-	for(int i = centralDeri[0]; i<centralDeri[1] ; i++){	
+	for(int i = centralDeri[0]; i<centralDeri[1] ; i++)	
 		centralDerOut += values[i];
-		//printf("%f \n",values[i]);
-	}
 
 	centralDerOut /= (float)(centralDeri[1] - centralDeri[0]);
-	centralDerb = true;
+	centralDer_flag = true;
+
 	if(centralDerOut < umbral)
-		centralDerb = false;
+		centralDer_flag = false;
 	
 	printf("Central Der: %.4f \t",centralDerOut);
 
@@ -164,10 +148,10 @@ void callbackHokuyo(const sensor_msgs::LaserScan::ConstPtr &msg){
 		izquierdaOut += values[i];
 	
 	izquierdaOut /= (float)(izquierdai[1] - izquierdai[0]);
-	izquierdab = true;
+	izquierda_flag = true;
 	
 	if(izquierdaOut < umbral)
-		izquierdab = false;
+		izquierda_flag = false;
 	
 	printf("Izquierda: %.4f\t",izquierdaOut);
 
@@ -184,16 +168,15 @@ void callbackHokuyo(const sensor_msgs::LaserScan::ConstPtr &msg){
 		derechaOut += values[i];
 	
 	derechaOut /= (float)(derechai[0] - derechai[1]);
-	derechab = true;
+	derecha_flag = true;
 	
 	if(derechaOut < umbral)
-		derechab = false;
+		derecha_flag = false;
 	
 	printf("Derecha: %f\t",derechaOut);
 
 	/*---------------------------EndRangos---------------------------*/	
 
-	//printf("\n");
 	hokuyoFlag = true;
 
 }
@@ -211,163 +194,102 @@ int main(int argc, char ** argv){
 
 	ros::Subscriber subHokuyo   	= nh.subscribe("/scan",1,callbackHokuyo);						//Regresa ROS subscriber y avisa a ROS la 'lectura'
 	ros::Subscriber encoizq 		= nh.subscribe("/encoIzq",1,callbackIzq);						// de mensajes y como maximo 1 mensaje en el buffer. 
-	ros::Subscriber encoder 		= nh.subscribe("/encoDer",1,callbackDer);						
-	ros::Subscriber subPosColor 	= nh.subscribe("/colorPos",1,callbackPosColor);
-	ros::Subscriber subPercentColor = nh.subscribe("/percentColor",1, callbackPercentColor); 
-	
-	ros::Publisher pubColorId 	= nh.advertise<std_msgs::Int8>("/colorId",1);						//Regresa ROS publisher y avisa a ROS la 'publicacion'  
-	ros::Publisher pubVelMotor 	= nh.advertise<std_msgs::Float32MultiArray>("/motor_speeds",1);		//de mensajes y como maximo 1 mensaje en el buffer.
-
-	int disOffset;
+	ros::Subscriber encoder 		= nh.subscribe("/encoDer",1,callbackDer);			
+																									
+	ros::Publisher pubVelMotor 	= nh.advertise<std_msgs::Float32MultiArray>("/motor_speeds",1);		//Regresa ROS publisher y avisa a ROS la 'publicacion'  				
+																									//de mensajes y como maximo 1 mensaje en el buffer.
+	int disOffset	;
 	float dist,angle;
-	std_msgs::Int8 colorId;					//Variable para la deteccion de color con camara
 	std_msgs::Float32MultiArray msg;		//Variable que almacena mensaje que vamos a enviar 
 	msg.data.resize(2);						//Tamaño de la variable msg
 	
 	while(ros::ok()){						//Ejecuta ROS mientras no exista alguna interrupción.
 		
 		hokuyoFlag = false;					//Bandera para detectar la conexion con el hokuyo
-		printf("Iniciando laser Hokuyo y camara...\n");
+		printf("Iniciando laser Hokuyo...\n");
 
 		while(!hokuyoFlag && ros::ok()){
 			ros::spinOnce();
 			rate.sleep();
 		}
-		
-		while(!flagPercentColor && ros::ok()){
-			ros::spinOnce();
-			rate.sleep();
-		}
-		while(!flagPosColor && ros::ok()){
-			ros::spinOnce;
-			rate.sleep();
-		}
 
-		//Leer e interpretar hokuyo
-		//hokuyo:important! + camara ? decision de movimiento
-		//hokuyo + camara ? cambio de color objetivo
-		/*switch(nextState){
-			case 0:
-				//Izquierda 90Â°
-				angle = 85;
-				dist = 0;
-				nextState = 1;
-				break;
-			case 1:
-				//avanza si esta libre
-				angle = 0;
-				dist = 5;
-				nextState = 2;
-				break;
-			case 2:
-				//regresa 90Â
-				angle = -85;
-				dist = 0;
-				nextState = 0;
-				break;
-			default:
-				nextState = 0;
-				angle = 0;
-				dist = 0;
-		}*/
-		
-		colorId.data = 1;
-		pubColorId.publish(colorId);
-		ros::spinOnce();
-		rate.sleep();
-		printf("%d %f \n",posColor,percentColor);
+/*------------------------------------Maquina de estados para evadir obstaculos------------------------------------*/	
 
-		/*--------------------Maquina de estados para el seguimiento de color--------------------*/
-		
-		switch(nextState){
-			case 0:
-				if(percentColor>0.85){
-					printf("Listo!!!!!!!!!!!!!!!!!!!!!!!!!!!\n");
-					return 0;
-				}
-				if(posColor == 0){
-					angle= 5;
-					dist=0;
-					nextState = 0;
-				}else if(posColor == 2){
-					angle = -8;
-					dist = 0;
-					nextState = 0;
-				}else if(posColor == 1){
-					angle = 0;
+		int total_steps, step=0;			
+		printf("\n Introduzca el numero de pasos deseado:");
+		scanf("%d",&total_steps);
+
+		while (step < total_steps ){
+			switch(nextState){
+				case 0:
+					break;
+
+				case 1:
+					step ++;
+					if(centralb && centralIzqb && centralDerb){
+						angle = 0;
+						dist = 15;
+						nextState = 0;
+					}else if(izquierdab){
+						angle = 90;
+						dist = 15;
+						nextState = 2;
+					}else if(derechab){
+						 angle = 0;
+						 dist = 0;
+						 nextState = 3;
+					}else{
+						angle = 0;
+						dist = -15;
+						nextState = 0;
+					}
+					break;
+
+				case 2:
+					step ++;
+					angle = -90;
 					dist = 0;
 					nextState = 1;
-				}else{
-					angle = 25;
-					dist = 0;
-					nextState = 0;
-				}
-				break;
-			case 1:
-				if(centralb && centralIzqb && centralDerb){
-					angle = 0;
-					dist = 15;
-					nextState = 0;
-				}else if(izquierdab){
+					break;
+
+				case 3:
+					step ++;
+					if(centralb && centralIzqb && centralDerb){
+						angle = 0;
+						dist = 15;
+						nextState = 0;
+					}else if(derechab){
+						angle = -90;
+						dist = 15;
+						nextState = 4;
+					}else {
+						angle = 0;
+						dist = 0;
+						nextState = 0;
+					}
+					break;	
+
+				case 4:
+					step ++;
 					angle = 90;
-					dist = 15;
-					nextState = 2;
-				}else if(derechab){
-					 angle = 0;
-					 dist = 0;
-					 nextState = 3;
-				}else{
-					angle = 0;
-					dist = -15;
+					dist = 0;
+					nextState = 3;
+					break;
+					
+				default :
 					nextState = 0;
-				}
-				break;
-			case 2:
-				angle = -90;
-				dist = 0;
-				nextState = 1;
-				break;
-			case 3:
-				if(centralb && centralIzqb && centralDerb){
-					angle = 0;
-					dist = 15;
-					nextState = 0;
-				}else if(derechab){
-					angle = -90;
-					dist = 15;
-					nextState = 4;
-				}else {
 					angle = 0;
 					dist = 0;
-					nextState = 0;
-				}
-				break;	
-			case 4:
-				angle = 90;
-				dist = 0;
-				nextState = 3;
-				break;
-			default :
-				nextState = 0;
-				angle = 0;
-				dist = 0;
+			}
 		}
 
+		step = 0;
 		float dist,angle;
 
 		/*--------------------------------Inserción de valores: angulo de giro y distancia--------------------------------*/
 
-		//fflush(stdin);					//Limpia buffer de entrada para evitar basura indeseada.
-		printf("\n Angulo de giro(°):");
-		scanf("%f",&angle);
 		angle*=-1.9;						//Factor de corrección.
-		//fflush(stdout);					//Limpia buffer de salida para evitar basura indeseada.
-
-		//fflush(stdin);
-		printf("\n Distancia de avance(m):");
-		scanf("%f",&dist);
 		dist *= 0.9;						//encFactor de corrección.
-		//fflush(stdout);
 
 		/*------------------------------------Giro------------------------------------*/	
 
@@ -390,7 +312,7 @@ int main(int argc, char ** argv){
 
 		//-------------------Parámetros usados en el perfil trapezoidal de giro-----------------------*/	
 
-		float inicio = enc[0];														//Posicion inicial del encoder derecho
+		float inicio  = enc[0];														//Posicion inicial del encoder derecho
 		float posIzq0 = enc[0];														//Posición actual del encoder 0: izquierdo
 		float posDer0 = enc[1];														//Posición actual del encoder 1: derecho
 		float delta   = posIzqFin - posIzq0;										//Distancia a avanzar = distancia sobre circunferencia de llantas: número de vueltas por llanta para alcanzar la distancia 

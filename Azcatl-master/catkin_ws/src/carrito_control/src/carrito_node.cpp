@@ -297,7 +297,7 @@ int main(int argc, char ** argv){
 			actual = enc[0];
 
 		}
-		float inicio = enc[0];
+		
 		//printf(" inicio-> %f",enc[0]);
 		float posDer0 = enc[1];
 		float posIzq0 = enc[0];
