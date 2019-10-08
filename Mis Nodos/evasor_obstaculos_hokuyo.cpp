@@ -1,6 +1,6 @@
 /*-------------------------------------------------------------
 Silva Guzmán Alejandro
-Revision y formato
+Dr. Savage Carmona
 Agosto 2019
 
 /*--------------------------------------------------------------*/
@@ -186,7 +186,7 @@ int nextState = 0;		//Inicia maquina de estados
 /*------------------------------------Inicio del Main------------------------------------*/	
 
 int main(int argc, char ** argv){
-	ros::init(argc, argv, "carrito_node");	//Inicio de ROS. Necesarios Argc y Argv. Tercer argumento: nombre del nodo.
+	ros::init(argc, argv, "evasor_obstaculos_hokuyo");	//Inicio de ROS. Necesarios Argc y Argv. Tercer argumento: nombre del nodo.
 	ros::NodeHandle nh;						//Manipulador de nodos: nodo publico 
 	ros::Rate rate(20);						//Tasa/cantidad de frecuencia 
 	
@@ -219,331 +219,370 @@ int main(int argc, char ** argv){
 		printf("\n Introduzca el numero de pasos deseado:");
 		scanf("%d",&total_steps);
 
-		while (step < total_steps ){
-			switch(nextState){
-				case 0:
-					break;
-
-				case 1:
-					step ++;
-					if(centralb && centralIzqb && centralDerb){
-						angle = 0;
-						dist = 15;
-						nextState = 0;
-					}else if(izquierdab){
-						angle = 90;
-						dist = 15;
-						nextState = 2;
-					}else if(derechab){
-						 angle = 0;
-						 dist = 0;
-						 nextState = 3;
-					}else{
-						angle = 0;
-						dist = -15;
-						nextState = 0;
-					}
-					break;
-
-				case 2:
-					step ++;
-					angle = -90;
-					dist = 0;
-					nextState = 1;
-					break;
-
-				case 3:
-					step ++;
-					if(centralb && centralIzqb && centralDerb){
-						angle = 0;
-						dist = 15;
-						nextState = 0;
-					}else if(derechab){
-						angle = -90;
-						dist = 15;
-						nextState = 4;
-					}else {
-						angle = 0;
-						dist = 0;
-						nextState = 0;
-					}
-					break;	
-
-				case 4:
-					step ++;
-					angle = 90;
-					dist = 0;
-					nextState = 3;
-					break;
-					
-				default :
-					nextState = 0;
-					angle = 0;
-					dist = 0;
-			}
-		}
-
 		step = 0;
-		float dist,angle;
+		int state = *nextState;
 
-		/*--------------------------------Inserción de valores: angulo de giro y distancia--------------------------------*/
+		while (step < total_steps ){
+			switch(state){
+				case 0:
+					if (!central_flag & !centralDer_flag & !centralIzq_flag){			// Sin obstaculo enfrente, avanza
+						angle = 0;
+						dist = 15;
+                        *next_state = 0;
+                        step++;
+	                }
+	                else{
+                        *movements=generate_output(STOP,Mag_Advance,max_twist);
 
-		angle*=-1.9;						//Factor de corrección.
-		dist *= 0.9;						//encFactor de corrección.
+                        if 		(!izquierda_flag & !central_flag  &  derecha_flag){		// Obstaculo en la derecha
+                            *next_state = 1;
+                        }
+                        else if ( izquierda_flag & !central_flag  & !derecha_flag){		// Obstaculo en la izquierda
+                            *next_state = 3;
+                        }
+                        else if (!izquierda_flag &  central_flag  & !derecha_flag){		// Obstaculo enfrente
+                            *next_state = 5;
+                        }
+	                }
+					break;
 
-		/*------------------------------------Giro------------------------------------*/	
+				/*---------------------------Obstaculo en la derecha---------------------------*/
+					
+				case 1: 			// Reversa
+	                angle = 0;
+					dist = -15;
+	                *next_state = 2;
+               		break;
 
-		float angulo = angle;
-		int anterior = enc[0];			//Variable para determinar si cambio orientacion de la llanta
-		int actual   = enc[0] + 100;	//Variable para determinar si cambio orientacion de la llanta
+		        case 2: 			// Giro izquierdo
+	                angle = -45;
+					dist = 0;
+	                *next_state = 0;
+	                step++;
+	                break;
 
-		//-------------------Loop para seguir recibiendo datos-----------------------*/	
+	            /*---------------------------Obstaculo en la izquierda---------------------------*/
 
-		while(anterior != actual){
+		        case 3: 			// Reversa
+	                angle = 0;
+					dist = -15;
+	                *next_state = 4;
+	                break;
+
+		        case 4: 			// Giro derecho
+	                angle = 45;
+					dist = 0;
+	                *next_state = 0;
+	                step++;
+	                break;
+
+	            /*---------------------------Obstaculo enfrente---------------------------*/
+
+		        case 5: 			// Reversa
+	                angle = 0;
+					dist = -15;
+	                *next_state = 6;
+	                break;
+
+		        case 6: 			// Giro izquierdo
+	                angle = -45;
+					dist = 0;
+	                *next_state = 7;
+	                break;
+
+		        case 7:				// Giro izquierdo
+	                angle = -45;
+					dist = 0;
+	                *next_state = 8;
+	                break;
+
+		        case 8: 			// Avanza
+	                angle = 0;
+					dist = 15;
+	                *next_state = 9;
+	                break;
+
+		        case 9: 			// Avanza
+	                angle = 0;
+					dist = 15;
+	                *next_state = 10;
+	                break;
+
+		        case 10: 			// Giro derecho
+	                angle = 45;
+					dist = 0;
+	                *next_state = 11;
+	                break;
+
+		        case 11: 			// Giro derecho
+	                angle = 45;
+					dist = 0;
+	                *next_state = 0;
+	                step++;
+	                break;
+ 			}
+
+			float dist,angle;
+
+			/*--------------------------------Inserción de valores: angulo de giro y distancia--------------------------------*/
+
+			angle *=-1.9;						//Factor de corrección.
+			dist  *= 0.9;						//encFactor de corrección.
+
+			/*------------------------------------Giro------------------------------------*/	
+
+			float angulo = angle;
+			int anterior = enc[0];			//Variable para determinar si cambio orientacion de la llanta
+			int actual   = enc[0] + 100;	//Variable para determinar si cambio orientacion de la llanta
+
+			//-------------------Loop para seguir recibiendo datos-----------------------*/	
+
+			while(anterior != actual){
+				act = false;
+				while(!act && ros::ok()){				
+					//printf("Esperando nuevos datos... %f \n",enc[0]);
+					ros::spinOnce();								//Recibe llamadas de vuelta al subscriber
+					rate.sleep();									//Espera mientras el mensaje es emitido
+				}
+				anterior = actual;			//Actualiza valores de los encoders
+				actual = enc[0];			//para la siguiente comprobacion
+			}
+
+			//-------------------Parámetros usados en el perfil trapezoidal de giro-----------------------*/	
+
+			float inicio  = enc[0];														//Posicion inicial del encoder derecho
+			float posIzq0 = enc[0];														//Posición actual del encoder 0: izquierdo
+			float posDer0 = enc[1];														//Posición actual del encoder 1: derecho
+			float delta   = posIzqFin - posIzq0;										//Distancia a avanzar = distancia sobre circunferencia de llantas: número de vueltas por llanta para alcanzar la distancia 
+			float limite1 = (delta / 3.0) + posIzq0;									//Primer segmento que recorre el robot: un tercio de la diferencia de pi y pf mas la posición inicial 
+			float limite2 = (delta * (2.0 / 3.0)) + posIzq0;							//Segundo segmento que recorre el robot: dos tercios de la diferencia de pi y pf mas la posicion inicial
+			float posIzqFin = posIzq0 + ((d_llants * pi * angulo) / (c_llant * 360.0));	//Posiciones finales de los encoders
+			float posDerFin = posDer0 + ((d_llants * pi * angulo) / (c_llant * 360.0));	//a las que se quiere llegar.
+
+			//printf("%f %f \n",enc[0],limite1);
+
+			if(angulo > 0){		//Para angulo mayor a cero (rotación a la derecha)
+				
+				//---------------------------Perfil trapezoidal---------------------------------*/	
+
+				//-----------------Primera parte del perfil trapezoidal-----------------------*/	
+
+				while(enc[0] < limite1 && ros::ok()){
+					//printf("%f %f \n",enc[0],limite1);
+					msg.data[0] = k + (3.0 * (vm - k) * (fabs(enc[0] - posIzq0)/(delta)));		//Las llantas del lado izquierdo giran hacia adelante
+				    msg.data[1] = -msg.data[0];													//mientras que las del lado derecho hacia atras.
+		       		pubVelMotor.publish(msg);		//Emite mensaje con la velocidad de los motores
+					ros::spinOnce();
+					rate.sleep();		
+				}
+
+				//-----------------Segunda parte del perfil trapezoidal-----------------------*/	
+
+				while(enc[0] < limite2 && ros::ok()){
+					msg.data[0] = vm;				//Alcanza velocidad máxima
+					msg.data[1] = -vm;	
+		       		pubVelMotor.publish(msg);
+					ros::spinOnce();
+					rate.sleep();		
+				}
+
+				//-----------------Tercera parte del perfil trapezoidal-----------------------*/	
+
+				while(enc[0] < posIzqFin && ros::ok()){
+					printf("%f %f \n",enc[0],posIzqFin);
+					msg.data[0] = vm - (3.0 * (vm - k) * ((fabs(enc[0] - posIzq0) / (delta)) - (2.0 / 3.0)));
+					msg.data[1] = -msg.data[0];
+		       		pubVelMotor.publish(msg);
+					ros::spinOnce();
+					rate.sleep();		
+				}
+
+			}else{				//Para angulo menor a cero (rotacion a la izquierda)
+				
+				//---------------------------Perfil trapezoidal---------------------------------*/	
+
+				//-----------------Primera parte del perfil trapezoidal-----------------------*/	
+
+				while(enc[0] > limite1 && ros::ok()){
+					msg.data[0] = (-k - (3.0 * (vm - k) * (-fabs(enc[0] - posIzq0)/(delta))));		//Las llantas del lado derecho giran hacia adelante
+					msg.data[1] = - msg.data[0];													//mientras que las del lado izquierdo hacia atras.
+					pubVelMotor.publish(msg);
+					ros::spinOnce();
+					rate.sleep();
+				}
+
+				//-----------------Segunda parte del perfil trapezoidal-----------------------*/	
+
+				while(enc[0] > limite2 && ros::ok()){
+					msg.data[0] = -vm;
+					msg.data[1] = vm;						//Alcanza velocidad máxima
+					pubVelMotor.publish(msg);
+					ros::spinOnce();
+					rate.sleep();
+				}
+
+				//-----------------Tercera parte del perfil trapezoidal-----------------------*/	
+
+				while(enc[0] > posIzqFin && ros::ok()){
+					msg.data[0] = -(((vm - k) / (delta * 0.33333 *-1)) * (enc[0] - posIzqFin)) - k;
+					msg.data[1] = -msg.data[0];
+					pubVelMotor.publish(msg);
+					ros::spinOnce();
+					rate.sleep();
+				}
+			}
+
+			printf("Termine de girar :)");
+
+			/*----------------------------Reset de encoders----------------------------*/	
+
+			for(int i = 0; i<10 ; i++){
+				msg.data[0] = 0.0;
+				msg.data[1] = 0.0;
+				pubVelMotor.publish(msg);
+				ros::spinOnce();
+				printf("Enviado :)\n");
+			}	
+
+			rate.sleep();							//Duerme al robot, determinado por la frecuencia indicada (20 Hz)
+			ros::Duration(1.0).sleep();				//Duerme al robot por un segundo
+			
+			/*--------------------------------------Avance---------------------------------------*/
+				
+			printf("Comenzando el avance...");
+			float av = 10;
+			av 	= dist;
 			act = false;
-			while(!act && ros::ok()){				
-				//printf("Esperando nuevos datos... %f \n",enc[0]);
-				ros::spinOnce();								//Recibe llamadas de vuelta al subscriber
-				rate.sleep();									//Espera mientras el mensaje es emitido
+			actual = enc[0] + 100;
+
+			//-------------------Loop para seguir recibiendo datos-----------------------*/	
+			while(anterior != actual){
+				act = false;
+				while(!act && ros::ok()){
+					//printf("Esperando nuevos datos... %f \n",enc[0]);
+					ros::spinOnce();
+					rate.sleep();
+				}
+				anterior = actual;
+				actual = enc[0];
 			}
-			anterior = actual;			//Actualiza valores de los encoders
-			actual = enc[0];			//para la siguiente comprobacion
-		}
 
-		//-------------------Parámetros usados en el perfil trapezoidal de giro-----------------------*/	
-
-		float inicio  = enc[0];														//Posicion inicial del encoder derecho
-		float posIzq0 = enc[0];														//Posición actual del encoder 0: izquierdo
-		float posDer0 = enc[1];														//Posición actual del encoder 1: derecho
-		float delta   = posIzqFin - posIzq0;										//Distancia a avanzar = distancia sobre circunferencia de llantas: número de vueltas por llanta para alcanzar la distancia 
-		float limite1 = (delta / 3.0) + posIzq0;									//Primer segmento que recorre el robot: un tercio de la diferencia de pi y pf mas la posición inicial 
-		float limite2 = (delta * (2.0 / 3.0)) + posIzq0;							//Segundo segmento que recorre el robot: dos tercios de la diferencia de pi y pf mas la posicion inicial
-		float posIzqFin = posIzq0 + ((d_llants * pi * angulo) / (c_llant * 360.0));	//Posiciones finales de los encoders
-		float posDerFin = posDer0 + ((d_llants * pi * angulo) / (c_llant * 360.0));	//a las que se quiere llegar.
-
-		//printf("%f %f \n",enc[0],limite1);
-
-		if(angulo > 0){		//Para angulo mayor a cero (rotación a la derecha)
+			//-------------------Parámetros usados en el perfil trapezoidal de avance positivo-----------------------*/	
 			
-			//---------------------------Perfil trapezoidal---------------------------------*/	
+			posIzq0 = enc[0];								//Posición actual del encoder 0: izquierdo
+			posDer0 = enc[1];								//Posición actual del encoder 1: derecho
+			delta   = av / c_llant;							//Distancia a avanzar = distancia sobre circunferencia de llantas: numero de vueltas por llanta para alcanzar la distancia deseada.
+			posIzqFin = posIzq0 + (av / c_llant);			//Posiciones finales de los encoders
+			posDerFin = posDer0 + (av / c_llant);			//a las que se quiere llegar.
+			limite1 = (delta / 3.0) + posIzq0;				//Primer segmento que recorre el robot: un tercio de la diferencia de pi y pf mas la posicion inicial 
+			limite2 = (delta * (2.0 / 3.0)) + posIzq0;		//Segundo segmento que recorre el robot: dos tercios de la diferencia de pi y pf mas la posicion inicial
+			//printf("%f %f \n",enc[0],limite1);
 
-			//-----------------Primera parte del perfil trapezoidal-----------------------*/	
+			//---------------------------------------------Avance---------------------------------------------------*/	
 
-			while(enc[0] < limite1 && ros::ok()){
-				//printf("%f %f \n",enc[0],limite1);
-				msg.data[0] = k + (3.0 * (vm - k) * (fabs(enc[0] - posIzq0)/(delta)));		//Las llantas del lado izquierdo giran hacia adelante
-			    msg.data[1] = -msg.data[0];													//mientras que las del lado derecho hacia atras.
-	       		pubVelMotor.publish(msg);		//Emite mensaje con la velocidad de los motores
-				ros::spinOnce();
-				rate.sleep();		
-			}
+			if(av > 0){			//Si la distancia a moverse es positiva (hacia adelante)
 
-			//-----------------Segunda parte del perfil trapezoidal-----------------------*/	
-
-			while(enc[0] < limite2 && ros::ok()){
-				msg.data[0] = vm;				//Alcanza velocidad máxima
-				msg.data[1] = -vm;	
-	       		pubVelMotor.publish(msg);
-				ros::spinOnce();
-				rate.sleep();		
-			}
-
-			//-----------------Tercera parte del perfil trapezoidal-----------------------*/	
-
-			while(enc[0] < posIzqFin && ros::ok()){
-				printf("%f %f \n",enc[0],posIzqFin);
-				msg.data[0] = vm - (3.0 * (vm - k) * ((fabs(enc[0] - posIzq0) / (delta)) - (2.0 / 3.0)));
-				msg.data[1] = -msg.data[0];
-	       		pubVelMotor.publish(msg);
-				ros::spinOnce();
-				rate.sleep();		
-			}
-
-		}else{				//Para angulo menor a cero (rotacion a la izquierda)
-			
-			//---------------------------Perfil trapezoidal---------------------------------*/	
-
-			//-----------------Primera parte del perfil trapezoidal-----------------------*/	
-
-			while(enc[0] > limite1 && ros::ok()){
-				msg.data[0] = (-k - (3.0 * (vm - k) * (-fabs(enc[0] - posIzq0)/(delta))));		//Las llantas del lado derecho giran hacia adelante
-				msg.data[1] = - msg.data[0];													//mientras que las del lado izquierdo hacia atras.
+				printf("Comenzando movimiento hacia adelante...");
+				//printf("Delta: %.4f \n",delta);
+				msg.data[0] = k;					//Desfase de inicio del perfil trapezoidal
+				msg.data[1] = k;
 				pubVelMotor.publish(msg);
 				ros::spinOnce();
 				rate.sleep();
+
+				//---------------------------Perfil trapezoidal---------------------------------*/	
+
+				//-----------------Primera parte del perfil trapezoidal-----------------------*/	
+
+				while(enc[0] < limite1  && ros::ok()){
+					//printf("%f %f %f \n",enc[0],limite1,msg.data[1]);
+					float error = fabs(enc[0]- posIzq0); 
+					printf("\n**********%f-------------\n",error);
+					msg.data[0] = k + (3.0 * (vm - k) * (fabs(enc[0] - posIzq0) / (delta)));		//Ambos secciones de llantas, izquierda
+					msg.data[1] = msg.data[0];														//y derecha, giraran hacia adelante
+					pubVelMotor.publish(msg);
+					ros::spinOnce();
+					rate.sleep();
+				}
+
+				//-----------------Segunda parte del perfil trapezoidal-----------------------*/	
+
+				while(enc[0] < limite2 && ros::ok()){
+					//printf("%f %f %f\n",enc[0],limite2,vm);
+					msg.data[0] = vm;
+					msg.data[1] = msg.data[0];
+					pubVelMotor.publish(msg);
+					ros::spinOnce();
+					rate.sleep();
+				}
+
+				//-----------------Tercera parte del perfil trapezoidal-----------------------*/	
+
+				while(enc[0] < posIzqFin && ros::ok()){
+					//printf("%f %f %f\n",enc[0],posIzqFin,msg.data[1]);
+					msg.data[0] = vm - (3.0 * (vm - k) * ((fabs(enc[0] - posIzq0) / (delta)) - (2.0 / 3.0)));
+					msg.data[1] = msg.data[0];
+					pubVelMotor.publish(msg);
+					ros::spinOnce();
+					rate.sleep();
+				}
+
+			//-----------------------------------------------Retroceso---------------------------------------------------*/	
+
+			}else{		//Si la distancia a moverse es negativa (reversa)
+
+				printf("Comenzando movimiento hacia atras...");
+
+				//---------------------------Perfil trapezoidal---------------------------------*/
+
+				//-----------------Primera parte del perfil trapezoidal-----------------------*/	
+
+				while(enc[0]>limite1 && ros::ok()){
+					//printf("%f %f %f\n",enc[0],limite1,msg.data[0]);
+					//printf("\n ********%f*****+ \n",(enc[0]-posIzq0));
+					msg.data[0] =(-k - (3.0 * (vm - k) * (-fabs(enc[0] - posIzq0) / (delta))));		//Ambas secciones de llantas, izquierda
+					msg.data[1] = msg.data[0];														//y derecha, giran hacia atras
+					pubVelMotor.publish(msg);
+					ros::spinOnce();
+					rate.sleep();
+				}
+
+				//-----------------Segunda parte del perfil trapezoidal-----------------------*/	
+
+				while(enc[0] > limite2 && ros::ok()){
+					//printf("%f %f %f\n",enc[0],limite2,-vm);
+					msg.data[0] = -vm;
+					msg.data[1] = msg.data[0];
+					pubVelMotor.publish(msg);
+					ros::spinOnce();
+					rate.sleep();
+				}
+
+				//-----------------Tercera parte del perfil trapezoidal-----------------------*/	
+
+				while(enc[0] > posIzqFin && ros::ok()){
+					//printf("%f %f %f\n",enc[0],posIzqFin,msg.data[1]);
+					msg.data[0] = -(((vm - k) / (delta * 0.33333 * -1)) * (enc[0] - posIzqFin)) - k;
+					msg.data[1] = msg.data[0];
+					pubVelMotor.publish(msg);
+					ros::spinOnce();
+					rate.sleep();
+				}
 			}
 
-			//-----------------Segunda parte del perfil trapezoidal-----------------------*/	
+			/*----------------------------Reset de encoders----------------------------*/	
 
-			while(enc[0] > limite2 && ros::ok()){
-				msg.data[0] = -vm;
-				msg.data[1] = vm;						//Alcanza velocidad máxima
+			for(int i = 0; i<10 ; i++){
+				msg.data[0] = 0.0;
+				msg.data[1] = 0.0;
 				pubVelMotor.publish(msg);
+				printf("Enviado :)\n");
 				ros::spinOnce();
-				rate.sleep();
 			}
 
-			//-----------------Tercera parte del perfil trapezoidal-----------------------*/	
-
-			while(enc[0] > posIzqFin && ros::ok()){
-				msg.data[0] = -(((vm - k) / (delta * 0.33333 *-1)) * (enc[0] - posIzqFin)) - k;
-				msg.data[1] = -msg.data[0];
-				pubVelMotor.publish(msg);
-				ros::spinOnce();
-				rate.sleep();
-			}
+			rate.sleep();							//Duerme al robot, determinado por la frecuencia indicada (20 Hz)
+			ros::Duration(1.0).sleep();				//Duerme al robot por un segundo
 		}
-
-		printf("Termine de girar :)");
-
-		/*----------------------------Reset de encoders----------------------------*/	
-
-		for(int i = 0; i<10 ; i++){
-			msg.data[0] = 0.0;
-			msg.data[1] = 0.0;
-			pubVelMotor.publish(msg);
-			ros::spinOnce();
-			printf("Enviado :)\n");
-		}	
-
-		rate.sleep();							//Duerme al robot, determinado por la frecuencia indicada (20 Hz)
-		ros::Duration(1.0).sleep();				//Duerme al robot por un segundo
-		
-		/*--------------------------------------Avance---------------------------------------*/
-			
-		printf("Comenzando el avance...");
-		float av = 10;
-		av 	= dist;
-		act = false;
-		actual = enc[0] + 100;
-
-		//-------------------Loop para seguir recibiendo datos-----------------------*/	
-		while(anterior != actual){
-			act = false;
-			while(!act && ros::ok()){
-				//printf("Esperando nuevos datos... %f \n",enc[0]);
-				ros::spinOnce();
-				rate.sleep();
-			}
-			anterior = actual;
-			actual = enc[0];
-		}
-
-		//-------------------Parámetros usados en el perfil trapezoidal de avance positivo-----------------------*/	
-		
-		posIzq0 = enc[0];								//Posición actual del encoder 0: izquierdo
-		posDer0 = enc[1];								//Posición actual del encoder 1: derecho
-		delta   = av / c_llant;							//Distancia a avanzar = distancia sobre circunferencia de llantas: numero de vueltas por llanta para alcanzar la distancia deseada.
-		posIzqFin = posIzq0 + (av / c_llant);			//Posiciones finales de los encoders
-		posDerFin = posDer0 + (av / c_llant);			//a las que se quiere llegar.
-		limite1 = (delta / 3.0) + posIzq0;				//Primer segmento que recorre el robot: un tercio de la diferencia de pi y pf mas la posicion inicial 
-		limite2 = (delta * (2.0 / 3.0)) + posIzq0;		//Segundo segmento que recorre el robot: dos tercios de la diferencia de pi y pf mas la posicion inicial
-		//printf("%f %f \n",enc[0],limite1);
-
-		//---------------------------------------------Avance---------------------------------------------------*/	
-
-		if(av > 0){			//Si la distancia a moverse es positiva (hacia adelante)
-
-			printf("Comenzando movimiento hacia adelante...");
-			//printf("Delta: %.4f \n",delta);
-			msg.data[0] = k;					//Desfase de inicio del perfil trapezoidal
-			msg.data[1] = k;
-			pubVelMotor.publish(msg);
-			ros::spinOnce();
-			rate.sleep();
-
-			//---------------------------Perfil trapezoidal---------------------------------*/	
-
-			//-----------------Primera parte del perfil trapezoidal-----------------------*/	
-
-			while(enc[0] < limite1  && ros::ok()){
-				//printf("%f %f %f \n",enc[0],limite1,msg.data[1]);
-				float error = fabs(enc[0]- posIzq0); 
-				printf("\n**********%f-------------\n",error);
-				msg.data[0] = k + (3.0 * (vm - k) * (fabs(enc[0] - posIzq0) / (delta)));		//Ambos secciones de llantas, izquierda
-				msg.data[1] = msg.data[0];														//y derecha, giraran hacia adelante
-				pubVelMotor.publish(msg);
-				ros::spinOnce();
-				rate.sleep();
-			}
-
-			//-----------------Segunda parte del perfil trapezoidal-----------------------*/	
-
-			while(enc[0] < limite2 && ros::ok()){
-				//printf("%f %f %f\n",enc[0],limite2,vm);
-				msg.data[0] = vm;
-				msg.data[1] = msg.data[0];
-				pubVelMotor.publish(msg);
-				ros::spinOnce();
-				rate.sleep();
-			}
-
-			//-----------------Tercera parte del perfil trapezoidal-----------------------*/	
-
-			while(enc[0] < posIzqFin && ros::ok()){
-				//printf("%f %f %f\n",enc[0],posIzqFin,msg.data[1]);
-				msg.data[0] = vm - (3.0 * (vm - k) * ((fabs(enc[0] - posIzq0) / (delta)) - (2.0 / 3.0)));
-				msg.data[1] = msg.data[0];
-				pubVelMotor.publish(msg);
-				ros::spinOnce();
-				rate.sleep();
-			}
-
-		//-----------------------------------------------Retroceso---------------------------------------------------*/	
-
-		}else{		//Si la distancia a moverse es negativa (reversa)
-
-			printf("Comenzando movimiento hacia atras...");
-
-			//---------------------------Perfil trapezoidal---------------------------------*/
-
-			//-----------------Primera parte del perfil trapezoidal-----------------------*/	
-
-			while(enc[0]>limite1 && ros::ok()){
-				//printf("%f %f %f\n",enc[0],limite1,msg.data[0]);
-				//printf("\n ********%f*****+ \n",(enc[0]-posIzq0));
-				msg.data[0] =(-k - (3.0 * (vm - k) * (-fabs(enc[0] - posIzq0) / (delta))));		//Ambas secciones de llantas, izquierda
-				msg.data[1] = msg.data[0];														//y derecha, giran hacia atras
-				pubVelMotor.publish(msg);
-				ros::spinOnce();
-				rate.sleep();
-			}
-
-			//-----------------Segunda parte del perfil trapezoidal-----------------------*/	
-
-			while(enc[0] > limite2 && ros::ok()){
-				//printf("%f %f %f\n",enc[0],limite2,-vm);
-				msg.data[0] = -vm;
-				msg.data[1] = msg.data[0];
-				pubVelMotor.publish(msg);
-				ros::spinOnce();
-				rate.sleep();
-			}
-
-			//-----------------Tercera parte del perfil trapezoidal-----------------------*/	
-
-			while(enc[0] > posIzqFin && ros::ok()){
-				//printf("%f %f %f\n",enc[0],posIzqFin,msg.data[1]);
-				msg.data[0] = -(((vm - k) / (delta * 0.33333 * -1)) * (enc[0] - posIzqFin)) - k;
-				msg.data[1] = msg.data[0];
-				pubVelMotor.publish(msg);
-				ros::spinOnce();
-				rate.sleep();
-			}
-		}
-
-		/*----------------------------Reset de encoders----------------------------*/	
-
-		for(int i = 0; i<10 ; i++){
-			msg.data[0] = 0.0;
-			msg.data[1] = 0.0;
-			pubVelMotor.publish(msg);
-			printf("Enviado :)\n");
-			ros::spinOnce();
-		}
-
-		rate.sleep();							//Duerme al robot, determinado por la frecuencia indicada (20 Hz)
-		ros::Duration(1.0).sleep();				//Duerme al robot por un segundo
 
 	}
 	return 0;

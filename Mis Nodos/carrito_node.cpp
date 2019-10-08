@@ -364,7 +364,7 @@ int main(int argc, char ** argv){
 		//fflush(stdout);					//Limpia buffer de salida para evitar basura indeseada.
 
 		//fflush(stdin);
-		printf("\n Distancia de avance(m):");
+		printf("\n Distancia de avance(cm):");
 		scanf("%f",&dist);
 		dist *= 0.9;						//encFactor de corrección.
 		//fflush(stdout);
