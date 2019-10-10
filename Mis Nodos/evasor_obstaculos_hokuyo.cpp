@@ -181,7 +181,7 @@ void callbackHokuyo(const sensor_msgs::LaserScan::ConstPtr &msg){
 
 }
 
-int nextState = 0;		//Inicia maquina de estados
+int *next_state = 0;		//Inicia maquina de estados
 
 /*------------------------------------Inicio del Main------------------------------------*/	
 
@@ -220,7 +220,7 @@ int main(int argc, char ** argv){
 		scanf("%d",&total_steps);
 
 		step = 0;
-		int state = *nextState;
+		int state = *next_state;
 
 		while (step < total_steps ){
 			switch(state){
@@ -232,8 +232,6 @@ int main(int argc, char ** argv){
                         step++;
 	                }
 	                else{
-                        *movements=generate_output(STOP,Mag_Advance,max_twist);
-
                         if 		(!izquierda_flag & !central_flag  &  derecha_flag){		// Obstaculo en la derecha
                             *next_state = 1;
                         }
@@ -353,11 +351,11 @@ int main(int argc, char ** argv){
 			float inicio  = enc[0];														//Posicion inicial del encoder derecho
 			float posIzq0 = enc[0];														//Posición actual del encoder 0: izquierdo
 			float posDer0 = enc[1];														//Posición actual del encoder 1: derecho
+			float posIzqFin = posIzq0 + ((d_llants * pi * angulo) / (c_llant * 360.0));	//Posiciones finales de los encoders
+			float posDerFin = posDer0 + ((d_llants * pi * angulo) / (c_llant * 360.0));	//a las que se quiere llegar.
 			float delta   = posIzqFin - posIzq0;										//Distancia a avanzar = distancia sobre circunferencia de llantas: número de vueltas por llanta para alcanzar la distancia 
 			float limite1 = (delta / 3.0) + posIzq0;									//Primer segmento que recorre el robot: un tercio de la diferencia de pi y pf mas la posición inicial 
 			float limite2 = (delta * (2.0 / 3.0)) + posIzq0;							//Segundo segmento que recorre el robot: dos tercios de la diferencia de pi y pf mas la posicion inicial
-			float posIzqFin = posIzq0 + ((d_llants * pi * angulo) / (c_llant * 360.0));	//Posiciones finales de los encoders
-			float posDerFin = posDer0 + ((d_llants * pi * angulo) / (c_llant * 360.0));	//a las que se quiere llegar.
 
 			//printf("%f %f \n",enc[0],limite1);
 
