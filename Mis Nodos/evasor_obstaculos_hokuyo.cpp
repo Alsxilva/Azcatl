@@ -246,6 +246,7 @@ int main(int argc, char ** argv){
                             next_state = 5;
                             printf("\nObstaculo enfrente %c",030);
                         }
+                        else printf("\n-----> Otro caso.");
 	                }
 					break;
 
@@ -343,7 +344,7 @@ int main(int argc, char ** argv){
 			while(anterior != actual){
 				act = false;
 				while(!act && ros::ok()){				
-					//printf("\nEsperando nuevos datos... %f \n",enc[0]);
+					printf("\n2. Esperando nuevos datos... %f \n",enc[0]);
 					ros::spinOnce();								//Recibe llamadas de vuelta al subscriber
 					rate.sleep();									//Espera mientras el mensaje es emitido
 				}
@@ -440,10 +441,9 @@ int main(int argc, char ** argv){
 			}
 
 			
-
 			/*----------------------------Reset de encoders----------------------------*/	
 
-			for(int i = 0; i<3 ; i++){
+			for(int i = 0; i<10 ; i++){
 				msg.data[0] = 0.0;
 				msg.data[1] = 0.0;
 				pubVelMotor.publish(msg);
@@ -466,7 +466,7 @@ int main(int argc, char ** argv){
 			while(anterior != actual){
 				act = false;
 				while(!act && ros::ok()){
-					//printf("Esperando nuevos datos... %f \n",enc[0]);
+					printf("\n1. Esperando nuevos datos... %f \n",enc[0]);
 					ros::spinOnce();
 					rate.sleep();
 				}
@@ -583,7 +583,7 @@ int main(int argc, char ** argv){
 
 			/*----------------------------Reset de encoders----------------------------*/	
 
-			for(int i = 0; i<3 ; i++){
+			for(int i = 0; i<10 ; i++){
 				msg.data[0] = 0.0;
 				msg.data[1] = 0.0;
 				pubVelMotor.publish(msg);
