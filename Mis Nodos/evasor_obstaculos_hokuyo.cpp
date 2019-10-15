@@ -222,8 +222,8 @@ int main(int argc, char ** argv){
 		int next_state = 0;				//Inicia maquina de estados
 
 		while (step < total_steps ){
-			printf("-----------------------------------");
-			printf("\n\nStep = \t%d", step);
+			printf("\n\n-----------------------------------");
+			printf("\nStep = \t%d", step);
 			switch(next_state){
 				case 0:
 					if (!central_flag & !centralDer_flag & !centralIzq_flag){			// Sin obstaculo enfrente, avanza
@@ -231,20 +231,20 @@ int main(int argc, char ** argv){
 						dist = 15;
                         next_state = 0;
                         step++;
-                        printf("\nSin obstaculo");
+                        printf("\nSin obstaculo %c", 002);
 	                }
 	                else{
                         if 		(!izquierda_flag & !central_flag  &  derecha_flag){		// Obstaculo en la derecha
                             next_state = 1;
-                            printf("\nObstaculo en la derecha");
+                            printf("\nObstaculo en la derecha %c",016);
                         }
                         else if ( izquierda_flag & !central_flag  & !derecha_flag){		// Obstaculo en la izquierda
                             next_state = 3;
-                            printf("\nObstaculo en la izquierda");
+                            printf("\nObstaculo en la izquierda %c",017);
                         }
                         else if (!izquierda_flag &  central_flag  & !derecha_flag){		// Obstaculo enfrente
                             next_state = 5;
-                            printf("\nObstaculo enfrente");
+                            printf("\nObstaculo enfrente %c",030);
                         }
 	                }
 					break;
@@ -436,7 +436,7 @@ int main(int argc, char ** argv){
 					rate.sleep();
 				}
 
-				printf("\n\nTermine de girar a la izquierda :)");
+				printf("\n\nTermine de girar a la izquierda");
 			}
 
 			
@@ -534,7 +534,7 @@ int main(int argc, char ** argv){
 					rate.sleep();
 				}
 
-				printf("\n\nTermine de avanzar :)");
+				printf("\n\nTermine de avanzar");
 
 			//-----------------------------------------------Retroceso---------------------------------------------------*/	
 
@@ -578,7 +578,7 @@ int main(int argc, char ** argv){
 					rate.sleep();
 				}
 
-				printf("\n\nTermine de retroceder :)");
+				printf("\n\nTermine de retroceder");
 			}
 
 			/*----------------------------Reset de encoders----------------------------*/	
