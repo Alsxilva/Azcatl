@@ -170,12 +170,12 @@ void callbackHokuyo(const sensor_msgs::LaserScan::ConstPtr &msg){
 	//Imprimira "False" si dentro de esa region NO hay obstaculoTrue
 	//Imprimira "True " si dentro de esa region SI hay obstaculo
 
-	printf("\n\nUmbral:\t\t\t%.4f [m]",	umbral);
-	printf("\nIzquierda:\t\t%.4f\t",	izquierdaOut); 	printf(izquierda_flag 	? "True" : "False");
-	printf("\nCentral:\t\t%.4f\t",		centralOut);	printf(central_flag 	? "True" : "False");
-	printf("\nDerecha:\t\t%.4f\t",		derechaOut);	printf(derecha_flag 	? "True" : "False");
-	//printf("\nCentral Izq:\t\t%.4f\t",	centralIzqOut); printf(centralIzq_flag 	? "False" : "True");
-	//printf("\nCentral Der:\t\t%.4f\t",	centralDerOut);	printf(centralDer_flag	? "False" : "True");
+	printf("\n\nUmbral:\t\t%.4f\t\t[m]",	umbral);
+	printf("\nIzquierda:\t%.4f\t\t",	izquierdaOut); 	printf(izquierda_flag 	? "True" : "False");
+	printf("\nCentral:\t%.4f\t\t",		centralOut);	printf(central_flag 	? "True" : "False");
+	printf("\nDerecha:\t%.4f\t\t",		derechaOut);	printf(derecha_flag 	? "True" : "False");
+	//printf("\nCentral Izq:\t%.4f\t",	centralIzqOut); printf(centralIzq_flag 	? "False" : "True");
+	//printf("\nCentral Der:\t%.4f\t",	centralDerOut);	printf(centralDer_flag	? "False" : "True");
 
 	/*---------------------------EndRangos---------------------------*/	
 
@@ -200,7 +200,7 @@ int main(int argc, char ** argv){
 																									//de mensajes y como maximo 1 mensaje en el buffer.
 	int disOffset	;
 	float dist,angle;
-	float distancia_usuario, angulo_usuario;
+	float distancia_usuario, angulo_usuario, umbral_usuario;
 	std_msgs::Float32MultiArray msg;		//Variable que almacena mensaje que vamos a enviar 
 	msg.data.resize(2);						//Tamaño de la variable msg
 	
@@ -220,16 +220,18 @@ int main(int argc, char ** argv){
 		int total_steps, step=0;			
 		printf("\n\nIntroduzca el numero de pasos deseado:");
 		scanf("%d",&total_steps);
-		printf("\nIntroduzca la distancia a recorrer por paso [centimetros]:");
+		/*printf("\nIntroduzca el umbral de obstaculos [m]:");
+		scanf("%d",&umbral_usuario);
+		printf("\nIntroduzca la distancia a recorrer por paso [cm]:");
 		scanf("%d",&distancia_usuario);
 		printf("\nIntroduzca el angulo a girar por paso [grados]:");
-		scanf("%d",&angulo_usuario);
+		scanf("%d",&angulo_usuario);*/
 
 		step = 0;
 		int next_state = 0;				//Inicia maquina de estados
 
 		while (step < total_steps ){
-			printf("\n\n--------------Step = %d --------------",step);
+			printf("\n\n--------------Step = %d --------------",step+1);
 			switch(next_state){
 				case 0:
 					if (!izquierda_flag & !central_flag & !derecha_flag){			// Sin obstaculo enfrente, avanza
@@ -346,8 +348,6 @@ int main(int argc, char ** argv){
 	                break;
  			}
 
-			float dist,angle;
-
 			/*--------------------------------Inserción de valores: angulo de giro y distancia--------------------------------*/
 
 			angle *=-1.9;						//Factor de corrección.
@@ -356,10 +356,10 @@ int main(int argc, char ** argv){
 			/*------------------------------------Giro------------------------------------*/	
 
 			float angulo = angle;
-			int anterior = enc[0];			//Variable para determinar si cambio orientacion de la llanta
+			/*int anterior = enc[0];			//Variable para determinar si cambio orientacion de la llanta
 			int actual   = enc[0] + 100;	//Variable para determinar si cambio orientacion de la llanta
 
-			//-------------------Loop para seguir recibiendo datos-----------------------*/	
+			//-------------------Loop para seguir recibiendo datos-----------------------/	
 
 			while(anterior != actual){
 				act = false;
@@ -370,7 +370,7 @@ int main(int argc, char ** argv){
 				}
 				anterior = actual;			//Actualiza valores de los encoders
 				actual = enc[0];			//para la siguiente comprobacion
-			}
+			}*/
 
 			//-------------------Parámetros usados en el perfil trapezoidal de giro-----------------------*/	
 
@@ -385,13 +385,14 @@ int main(int argc, char ** argv){
 
 			//printf("%f %f \n",enc[0],limite1);
 
-			if(angulo > 0){		//Para angulo mayor a cero (rotación a la derecha)
+			if(angulo > 0.001){		//Para angulo mayor a cero (rotación a la derecha)
 				
 				//---------------------------Perfil trapezoidal---------------------------------*/	
 
 				//-----------------Primera parte del perfil trapezoidal-----------------------*/	
 
 				printf("\n\n--->Dare giro a la derecha");
+				printf("\n\tGrados = %.4f\t[°]",angulo);
 
 				while(enc[0] < limite1 && ros::ok()){
 					//printf("%f %f \n",enc[0],limite1);
@@ -428,14 +429,15 @@ int main(int argc, char ** argv){
 
 				printf("\n\n---Termine de girar a la derecha---");
 
-			}else{				//Para angulo menor a cero (rotacion a la izquierda)
+			}else if (angulo < -0.001){				//Para angulo menor a cero (rotacion a la izquierda)
 				
 				//---------------------------Perfil trapezoidal---------------------------------*/	
 
 				//-----------------Primera parte del perfil trapezoidal-----------------------*/	
 
 				printf("\n\n--->Dare giro a la izquierda");
-
+				printf("\n\tGrados = %.4f\t[°]",angulo);
+				
 				while(enc[0] > limite1 && ros::ok()){
 					printf("\n\n--->Giro Izquierda 1");
 					msg.data[0] = (-k - (3.0 * (vm - k) * (-fabs(enc[0] - posIzq0)/(delta))));		//Las llantas del lado derecho giran hacia adelante
@@ -489,10 +491,10 @@ int main(int argc, char ** argv){
 			//printf("Comenzando el avance...");
 			float av = 10;
 			av 	= dist;
-			act = false;
+			/*act = false;
 			actual = enc[0] + 100;
 
-			//-------------------Loop para seguir recibiendo datos-----------------------*/	
+			//-------------------Loop para seguir recibiendo datos-----------------------//
 			while(anterior != actual){
 				act = false;
 				while(!act && ros::ok()){
@@ -502,7 +504,7 @@ int main(int argc, char ** argv){
 				}
 				anterior = actual;
 				actual = enc[0];
-			}
+			}*/
 
 			//-------------------Parámetros usados en el perfil trapezoidal de avance positivo-----------------------*/	
 			
@@ -517,7 +519,10 @@ int main(int argc, char ** argv){
 
 			//---------------------------------------------Avance---------------------------------------------------*/	
 
-			if(av > 0){			//Si la distancia a moverse es positiva (hacia adelante)
+			if(av > 0.001){			//Si la distancia a moverse es positiva (hacia adelante)
+
+				printf("\n\n--->Avanzare");
+				printf("\n\tDistancia = %.4f\f[cm]",av);
 
 				//printf("Comenzando movimiento hacia adelante...");
 				//printf("Delta: %.4f \n",delta);
@@ -531,7 +536,6 @@ int main(int argc, char ** argv){
 
 				//-----------------Primera parte del perfil trapezoidal-----------------------*/	
 
-				printf("\n\n--->Avanzare");
 
 				while(enc[0] < limite1  && ros::ok()){
 					//printf("%f %f %f \n",enc[0],limite1,msg.data[1]);
@@ -573,7 +577,7 @@ int main(int argc, char ** argv){
 
 			//-----------------------------------------------Retroceso---------------------------------------------------*/	
 
-			}else{		//Si la distancia a moverse es negativa (reversa)
+			}else if(av < -0.001){		//Si la distancia a moverse es negativa (reversa)
 
 				//printf("Comenzando movimiento hacia atras...");
 
@@ -582,6 +586,7 @@ int main(int argc, char ** argv){
 				//-----------------Primera parte del perfil trapezoidal-----------------------*/	
 
 				printf("\n\n--->Retrocedere");
+				printf("\n\tDistancia = %.4f\t[cm]",av);
 
 				while(enc[0]>limite1 && ros::ok()){
 					//printf("%f %f %f\n",enc[0],limite1,msg.data[0]);
