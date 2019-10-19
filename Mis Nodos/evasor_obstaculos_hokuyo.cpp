@@ -203,35 +203,35 @@ int main(int argc, char ** argv){
 	float distancia_usuario, angulo_usuario, umbral_usuario;
 	std_msgs::Float32MultiArray msg;		//Variable que almacena mensaje que vamos a enviar 
 	msg.data.resize(2);						//Tamaño de la variable msg
-	
+
 	while(ros::ok()){						//Ejecuta ROS mientras no exista alguna interrupción.
-		
-		hokuyoFlag = false;					//Bandera para detectar la conexion con el hokuyo
-		printf("\n\nEsperando a Hokuyo.");
-
-		while(!hokuyoFlag && ros::ok()){
-			printf("..");					//Imprimira ".." mientras espera respuesta de Hokuyo
-			ros::spinOnce();
-			rate.sleep();
-		}
-
 /*------------------------------------Maquina de estados para evadir obstaculos------------------------------------*/	
 
 		int total_steps, step=0;			
-		printf("\n\nIntroduzca el numero de pasos deseado:");
+		printf("\n\nIntroduzca:\nEl numero de pasos deseado:");
 		scanf("%d",&total_steps);
-		/*printf("\nIntroduzca el umbral de obstaculos [m]:");
+		printf("\nDistancia a detectar los obstaculos [m]:");
 		scanf("%d",&umbral_usuario);
-		printf("\nIntroduzca la distancia a recorrer por paso [cm]:");
+		printf("\nDistancia a recorrer por paso [cm]:");
 		scanf("%d",&distancia_usuario);
-		printf("\nIntroduzca el angulo a girar por paso [grados]:");
-		scanf("%d",&angulo_usuario);*/
+		printf("\nAngulo a girar por paso [grados]:");
+		scanf("%d",&angulo_usuario);
 
 		step = 0;
 		int next_state = 0;				//Inicia maquina de estados
 
 		while (step < total_steps ){
-			printf("\n\n--------------Step = %d --------------",step+1);
+
+			hokuyoFlag = false;						//Bandera para detectar la conexion con el hokuyo
+			printf("\n\nEsperando a Hokuyo.");
+			
+			while(!hokuyoFlag && ros::ok()){
+				printf("..");					//Imprimira ".." mientras espera respuesta de Hokuyo
+				ros::spinOnce();
+				rate.sleep();
+			} 
+
+			printf("\n\n--------------Step: %d de: %d--------------",step+1, total_steps);
 			switch(next_state){
 				case 0:
 					if (!izquierda_flag & !central_flag & !derecha_flag){			// Sin obstaculo enfrente, avanza
@@ -239,22 +239,22 @@ int main(int argc, char ** argv){
 						dist = 15;
                         next_state = 0;
                         step++;
-                        printf("\nSin obstaculo \t\t");
+                        printf("\n\n----->Sin obstaculo \t\t");
 	                }
 	                else{
                         if 		(!izquierda_flag & !central_flag  &  derecha_flag){		// Obstaculo en la derecha
                             next_state = 1;
-                            printf("\nObstaculo en la derecha \t\t");
+                            printf("\n\n----->Obstaculo en la derecha \t\t");
                         }
                         else if ( izquierda_flag & !central_flag  & !derecha_flag){		// Obstaculo en la izquierda
                             next_state = 3;
-                            printf("\nObstaculo en la izquierda \t\t");
+                            printf("\n\n----->Obstaculo en la izquierda \t\t");
                         }
                         else if (!izquierda_flag &  central_flag  & !derecha_flag){		// Obstaculo enfrente
                             next_state = 5;
-                            printf("\nObstaculo enfrente \t\t");
+                            printf("\n\n----->Obstaculo enfrente \t\t");
                         }
-                        else printf("\n-----> Otro caso:\t");
+                        else printf("\n\n-----> Otro caso:\t");
                         	printf(izquierda_flag 	? "True" : "False");
 							printf(central_flag 	? "True" : "False");
 							printf(derecha_flag 	? "True" : "False");
@@ -356,7 +356,7 @@ int main(int argc, char ** argv){
 			/*------------------------------------Giro------------------------------------*/	
 
 			float angulo = angle;
-			/*int anterior = enc[0];			//Variable para determinar si cambio orientacion de la llanta
+			int anterior = enc[0];			//Variable para determinar si cambio orientacion de la llanta
 			int actual   = enc[0] + 100;	//Variable para determinar si cambio orientacion de la llanta
 
 			//-------------------Loop para seguir recibiendo datos-----------------------/	
@@ -364,13 +364,13 @@ int main(int argc, char ** argv){
 			while(anterior != actual){
 				act = false;
 				while(!act && ros::ok()){				
-					printf("\n1. Esperando motores... %f \n",enc[0]);
+					printf("\n1. Esperando motores...");
 					ros::spinOnce();								//Recibe llamadas de vuelta al subscriber
 					rate.sleep();									//Espera mientras el mensaje es emitido
 				}
 				anterior = actual;			//Actualiza valores de los encoders
 				actual = enc[0];			//para la siguiente comprobacion
-			}*/
+			}
 
 			//-------------------Parámetros usados en el perfil trapezoidal de giro-----------------------*/	
 
@@ -396,7 +396,9 @@ int main(int argc, char ** argv){
 
 				while(enc[0] < limite1 && ros::ok()){
 					//printf("%f %f \n",enc[0],limite1);
-					printf("\n\n--->Giro Derecha 1");
+					//printf("\n\n--->Giro Derecha 1");
+					//printf("\nEncoder izquierdo: %.4f", enc[0]);
+					//printf("\nEncoder derecho:   %.4f", enc[1]);
 					msg.data[0] = k + (3.0 * (vm - k) * (fabs(enc[0] - posIzq0)/(delta)));		//Las llantas del lado izquierdo giran hacia adelante
 				    msg.data[1] = -msg.data[0];													//mientras que las del lado derecho hacia atras.
 		       		pubVelMotor.publish(msg);		//Emite mensaje con la velocidad de los motores
@@ -407,7 +409,9 @@ int main(int argc, char ** argv){
 				//-----------------Segunda parte del perfil trapezoidal-----------------------*/	
 
 				while(enc[0] < limite2 && ros::ok()){
-					printf("\n--->Giro Derecha 2");
+					//printf("\n--->Giro Derecha 2");
+					//printf("\nEncoder izquierdo: %.4f", enc[0]);
+					//printf("\nEncoder derecho:   %.4f", enc[1]);
 					msg.data[0] = vm;				//Alcanza velocidad máxima
 					msg.data[1] = -vm;	
 		       		pubVelMotor.publish(msg);
@@ -418,7 +422,9 @@ int main(int argc, char ** argv){
 				//-----------------Tercera parte del perfil trapezoidal-----------------------*/	
 
 				while(enc[0] < posIzqFin && ros::ok()){
-					printf("\n--->Giro Derecha 3");
+					//printf("\n--->Giro Derecha 3");
+					//printf("\nEncoder izquierdo: %.4f", enc[0]);
+					//printf("\nEncoder derecho:   %.4f", enc[1]);
 					//printf("%f %f \n",enc[0],posIzqFin);
 					msg.data[0] = vm - (3.0 * (vm - k) * ((fabs(enc[0] - posIzq0) / (delta)) - (2.0 / 3.0)));
 					msg.data[1] = -msg.data[0];
@@ -439,7 +445,9 @@ int main(int argc, char ** argv){
 				printf("\n\tGrados = %.4f\t[°]",angulo);
 				
 				while(enc[0] > limite1 && ros::ok()){
-					printf("\n\n--->Giro Izquierda 1");
+					//printf("\n\n--->Giro Izquierda 1");
+					//printf("\nEncoder izquierdo: %.4f", enc[0]);
+					//printf("\nEncoder derecho:   %.4f", enc[1]);
 					msg.data[0] = (-k - (3.0 * (vm - k) * (-fabs(enc[0] - posIzq0)/(delta))));		//Las llantas del lado derecho giran hacia adelante
 					msg.data[1] = - msg.data[0];													//mientras que las del lado izquierdo hacia atras.
 					pubVelMotor.publish(msg);
@@ -450,7 +458,9 @@ int main(int argc, char ** argv){
 				//-----------------Segunda parte del perfil trapezoidal-----------------------*/	
 
 				while(enc[0] > limite2 && ros::ok()){
-					printf("\n--->Giro Izquierda 2");
+					//printf("\n--->Giro Izquierda 2");
+					//printf("\nEncoder izquierdo: %.4f", enc[0]);
+					//printf("\nEncoder derecho:   %.4f", enc[1]);
 					msg.data[0] = -vm;
 					msg.data[1] = vm;						//Alcanza velocidad máxima
 					pubVelMotor.publish(msg);
@@ -461,14 +471,15 @@ int main(int argc, char ** argv){
 				//-----------------Tercera parte del perfil trapezoidal-----------------------*/	
 
 				while(enc[0] > posIzqFin && ros::ok()){
-					printf("\n--->Giro Izquierda 3");
+					//printf("\n--->Giro Izquierda 3");
+					//printf("\nEncoder izquierdo: %.4f", enc[0]);
+					//printf("\nEncoder derecho:   %.4f", enc[1]);
 					msg.data[0] = -(((vm - k) / (delta * 0.33333 *-1)) * (enc[0] - posIzqFin)) - k;
 					msg.data[1] = -msg.data[0];
 					pubVelMotor.publish(msg);
 					ros::spinOnce();
 					rate.sleep();
 				}
-
 				printf("\n\n---Termine de girar a la izquierda---");
 			}
 
@@ -491,20 +502,20 @@ int main(int argc, char ** argv){
 			//printf("Comenzando el avance...");
 			float av = 10;
 			av 	= dist;
-			/*act = false;
+			act = false;
 			actual = enc[0] + 100;
 
 			//-------------------Loop para seguir recibiendo datos-----------------------//
 			while(anterior != actual){
 				act = false;
 				while(!act && ros::ok()){
-					printf("\n\n2. Esperando motores... %f \n",enc[0]);
+					printf("\n\n2. Esperando motores...");
 					ros::spinOnce();
 					rate.sleep();
 				}
 				anterior = actual;
 				actual = enc[0];
-			}*/
+			}
 
 			//-------------------Parámetros usados en el perfil trapezoidal de avance positivo-----------------------*/	
 			
@@ -522,7 +533,7 @@ int main(int argc, char ** argv){
 			if(av > 0.001){			//Si la distancia a moverse es positiva (hacia adelante)
 
 				printf("\n\n--->Avanzare");
-				printf("\n\tDistancia = %.4f\f[cm]",av);
+				printf("\n\tDistancia = %.4f [cm]",dist);
 
 				//printf("Comenzando movimiento hacia adelante...");
 				//printf("Delta: %.4f \n",delta);
@@ -539,7 +550,9 @@ int main(int argc, char ** argv){
 
 				while(enc[0] < limite1  && ros::ok()){
 					//printf("%f %f %f \n",enc[0],limite1,msg.data[1]);
-					printf("\n\n--->Avance 1");
+					//printf("\n\n--->Avance 1");
+					//printf("\nEncoder izquierdo: %.4f", enc[0]);
+					//printf("\nEncoder derecho:   %.4f", enc[1]);
 					float error = fabs(enc[0]- posIzq0); 
 					//printf("\n**********%f-------------\n",error);
 					msg.data[0] = k + (3.0 * (vm - k) * (fabs(enc[0] - posIzq0) / (delta)));		//Ambos secciones de llantas, izquierda
@@ -553,7 +566,9 @@ int main(int argc, char ** argv){
 
 				while(enc[0] < limite2 && ros::ok()){
 					//printf("%f %f %f\n",enc[0],limite2,vm);
-					printf("\n--->Avance 2");
+					//printf("\n--->Avance 2");
+					//printf("\nEncoder izquierdo: %.4f", enc[0]);
+					//printf("\nEncoder derecho:   %.4f", enc[1]);
 					msg.data[0] = vm;
 					msg.data[1] = msg.data[0];
 					pubVelMotor.publish(msg);
@@ -565,7 +580,9 @@ int main(int argc, char ** argv){
 
 				while(enc[0] < posIzqFin && ros::ok()){
 					//printf("%f %f %f\n",enc[0],posIzqFin,msg.data[1]);
-					printf("\n--->Avance 3");
+					//printf("\n--->Avance 3");
+					//printf("\nEncoder izquierdo: %.4f", enc[0]);
+					//printf("\nEncoder derecho:   %.4f", enc[1]);
 					msg.data[0] = vm - (3.0 * (vm - k) * ((fabs(enc[0] - posIzq0) / (delta)) - (2.0 / 3.0)));
 					msg.data[1] = msg.data[0];
 					pubVelMotor.publish(msg);
@@ -591,7 +608,9 @@ int main(int argc, char ** argv){
 				while(enc[0]>limite1 && ros::ok()){
 					//printf("%f %f %f\n",enc[0],limite1,msg.data[0]);
 					//printf("\n ********%f*****+ \n",(enc[0]-posIzq0));
-					printf("\n\n--->Reversa 1");
+					//printf("\n\n--->Reversa 1");
+					//printf("\nEncoder izquierdo: %.4f", enc[0]);
+					//printf("\nEncoder derecho:   %.4f", enc[1]);
 					msg.data[0] =(-k - (3.0 * (vm - k) * (-fabs(enc[0] - posIzq0) / (delta))));		//Ambas secciones de llantas, izquierda
 					msg.data[1] = msg.data[0];														//y derecha, giran hacia atras
 					pubVelMotor.publish(msg);
@@ -603,7 +622,9 @@ int main(int argc, char ** argv){
 
 				while(enc[0] > limite2 && ros::ok()){
 					//printf("%f %f %f\n",enc[0],limite2,-vm);
-					printf("\n--->Reversa 2");
+					//printf("\n--->Reversa 2");
+					//printf("\nEncoder izquierdo: %.4f", enc[0]);
+					//printf("\nEncoder derecho:   %.4f", enc[1]);
 					msg.data[0] = -vm;
 					msg.data[1] = msg.data[0];
 					pubVelMotor.publish(msg);
@@ -615,7 +636,9 @@ int main(int argc, char ** argv){
 
 				while(enc[0] > posIzqFin && ros::ok()){
 					//printf("%f %f %f\n",enc[0],posIzqFin,msg.data[1]);
-					printf("\n--->Reversa 3");
+					//printf("\n--->Reversa 3");
+					//printf("\nEncoder izquierdo: %.4f", enc[0]);
+					//printf("\nEncoder derecho:   %.4f", enc[1]);
 					msg.data[0] = -(((vm - k) / (delta * 0.33333 * -1)) * (enc[0] - posIzqFin)) - k;
 					msg.data[1] = msg.data[0];
 					pubVelMotor.publish(msg);
