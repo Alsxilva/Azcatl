@@ -199,23 +199,26 @@ int main(int argc, char ** argv){
 	ros::Publisher pubVelMotor 	= nh.advertise<std_msgs::Float32MultiArray>("/motor_speeds",1);		//Regresa ROS publisher y avisa a ROS la 'publicacion'  				
 																									//de mensajes y como maximo 1 mensaje en el buffer.
 	int disOffset	;
-	float dist,angle;
+	float dist, angle;
 	float distancia_usuario, angulo_usuario, umbral_usuario;
 	std_msgs::Float32MultiArray msg;		//Variable que almacena mensaje que vamos a enviar 
 	msg.data.resize(2);						//Tamaño de la variable msg
 
 	while(ros::ok()){						//Ejecuta ROS mientras no exista alguna interrupción.
+		
 /*------------------------------------Maquina de estados para evadir obstaculos------------------------------------*/	
 
 		int total_steps, step=0;			
 		printf("\n\nIntroduzca:\nEl numero de pasos deseado:");
 		scanf("%d",&total_steps);
-		printf("\nDistancia a detectar los obstaculos [m]:");
-		scanf("%d",&umbral_usuario);
-		printf("\nDistancia a recorrer por paso [cm]:");
-		scanf("%d",&distancia_usuario);
-		printf("\nAngulo a girar por paso [grados]:");
-		scanf("%d",&angulo_usuario);
+		printf("Distancia a detectar los obstaculos [cm]:");
+		scanf("%f",&umbral_usuario);
+		printf("Distancia a recorrer por paso :/ [cm]:");
+		scanf("%f",&distancia_usuario);
+		//printf("\nAngulo a girar por paso [grados]:");
+		//scanf("%f",&angulo_usuario);
+
+		umbral = umbral_usuario/100;
 
 		step = 0;
 		int next_state = 0;				//Inicia maquina de estados
@@ -231,12 +234,12 @@ int main(int argc, char ** argv){
 				rate.sleep();
 			} 
 
-			printf("\n\n--------------Step: %d de: %d--------------",step+1, total_steps);
+			printf("\n\n--------------Step: %d de: %d--------------", step+1, total_steps);
 			switch(next_state){
 				case 0:
 					if (!izquierda_flag & !central_flag & !derecha_flag){			// Sin obstaculo enfrente, avanza
 						angle = 0;
-						dist = 15;
+						dist = distancia_usuario;
                         next_state = 0;
                         step++;
                         printf("\n\n----->Sin obstaculo \t\t");
@@ -265,7 +268,7 @@ int main(int argc, char ** argv){
 					
 				case 1: 			// Reversa
 	                angle = 0;
-					dist = -15;
+					dist = -distancia_usuario;
 	                next_state = 2;
 	                printf("\n\nCase 1");
                		break;
@@ -282,7 +285,7 @@ int main(int argc, char ** argv){
 
 		        case 3: 			// Reversa
 	                angle = 0;
-					dist = -15;
+					dist = -distancia_usuario;
 	                next_state = 4;
 	                printf("\n\nCase 3");
 	                break;
@@ -299,7 +302,7 @@ int main(int argc, char ** argv){
 
 		        case 5: 			// Reversa
 	                angle = 0;
-					dist = -15;
+					dist = -distancia_usuario;
 	                next_state = 6;
 	                printf("\n\nCase 5");
 	                break;
@@ -320,14 +323,14 @@ int main(int argc, char ** argv){
 
 		        case 8: 			// Avanza
 	                angle = 0;
-					dist = 15;
+					dist = distancia_usuario;
 	                next_state = 9;
 	                printf("\n\nCase 8");
 	                break;
 
 		        case 9: 			// Avanza
 	                angle = 0;
-					dist = 15;
+					dist = distancia_usuario;
 	                next_state = 10;
 	                printf("\n\nCase 9");
 	                break;
@@ -364,7 +367,9 @@ int main(int argc, char ** argv){
 			while(anterior != actual){
 				act = false;
 				while(!act && ros::ok()){				
-					printf("\n1. Esperando motores...");
+					printf("\n1-->Esperando motores...");
+					//printf("\nEncoder derecho  : %.4f", enc[1]);
+					//printf("\nEncoder izquierdo: %.4f", enc[0]);
 					ros::spinOnce();								//Recibe llamadas de vuelta al subscriber
 					rate.sleep();									//Espera mientras el mensaje es emitido
 				}
@@ -397,8 +402,6 @@ int main(int argc, char ** argv){
 				while(enc[0] < limite1 && ros::ok()){
 					//printf("%f %f \n",enc[0],limite1);
 					//printf("\n\n--->Giro Derecha 1");
-					//printf("\nEncoder izquierdo: %.4f", enc[0]);
-					//printf("\nEncoder derecho:   %.4f", enc[1]);
 					msg.data[0] = k + (3.0 * (vm - k) * (fabs(enc[0] - posIzq0)/(delta)));		//Las llantas del lado izquierdo giran hacia adelante
 				    msg.data[1] = -msg.data[0];													//mientras que las del lado derecho hacia atras.
 		       		pubVelMotor.publish(msg);		//Emite mensaje con la velocidad de los motores
@@ -410,8 +413,6 @@ int main(int argc, char ** argv){
 
 				while(enc[0] < limite2 && ros::ok()){
 					//printf("\n--->Giro Derecha 2");
-					//printf("\nEncoder izquierdo: %.4f", enc[0]);
-					//printf("\nEncoder derecho:   %.4f", enc[1]);
 					msg.data[0] = vm;				//Alcanza velocidad máxima
 					msg.data[1] = -vm;	
 		       		pubVelMotor.publish(msg);
@@ -423,8 +424,6 @@ int main(int argc, char ** argv){
 
 				while(enc[0] < posIzqFin && ros::ok()){
 					//printf("\n--->Giro Derecha 3");
-					//printf("\nEncoder izquierdo: %.4f", enc[0]);
-					//printf("\nEncoder derecho:   %.4f", enc[1]);
 					//printf("%f %f \n",enc[0],posIzqFin);
 					msg.data[0] = vm - (3.0 * (vm - k) * ((fabs(enc[0] - posIzq0) / (delta)) - (2.0 / 3.0)));
 					msg.data[1] = -msg.data[0];
@@ -446,8 +445,6 @@ int main(int argc, char ** argv){
 				
 				while(enc[0] > limite1 && ros::ok()){
 					//printf("\n\n--->Giro Izquierda 1");
-					//printf("\nEncoder izquierdo: %.4f", enc[0]);
-					//printf("\nEncoder derecho:   %.4f", enc[1]);
 					msg.data[0] = (-k - (3.0 * (vm - k) * (-fabs(enc[0] - posIzq0)/(delta))));		//Las llantas del lado derecho giran hacia adelante
 					msg.data[1] = - msg.data[0];													//mientras que las del lado izquierdo hacia atras.
 					pubVelMotor.publish(msg);
@@ -459,8 +456,6 @@ int main(int argc, char ** argv){
 
 				while(enc[0] > limite2 && ros::ok()){
 					//printf("\n--->Giro Izquierda 2");
-					//printf("\nEncoder izquierdo: %.4f", enc[0]);
-					//printf("\nEncoder derecho:   %.4f", enc[1]);
 					msg.data[0] = -vm;
 					msg.data[1] = vm;						//Alcanza velocidad máxima
 					pubVelMotor.publish(msg);
@@ -472,8 +467,6 @@ int main(int argc, char ** argv){
 
 				while(enc[0] > posIzqFin && ros::ok()){
 					//printf("\n--->Giro Izquierda 3");
-					//printf("\nEncoder izquierdo: %.4f", enc[0]);
-					//printf("\nEncoder derecho:   %.4f", enc[1]);
 					msg.data[0] = -(((vm - k) / (delta * 0.33333 *-1)) * (enc[0] - posIzqFin)) - k;
 					msg.data[1] = -msg.data[0];
 					pubVelMotor.publish(msg);
@@ -509,7 +502,9 @@ int main(int argc, char ** argv){
 			while(anterior != actual){
 				act = false;
 				while(!act && ros::ok()){
-					printf("\n\n2. Esperando motores...");
+					printf("\n2-->Esperando motores...");
+					//printf("\nEncoder derecho  : %.4f", enc[1]);
+					//printf("\nEncoder izquierdo: %.4f", enc[0]);
 					ros::spinOnce();
 					rate.sleep();
 				}
@@ -533,7 +528,7 @@ int main(int argc, char ** argv){
 			if(av > 0.001){			//Si la distancia a moverse es positiva (hacia adelante)
 
 				printf("\n\n--->Avanzare");
-				printf("\n\tDistancia = %.4f [cm]",dist);
+				printf("\n\tDistancia = %f [cm]",distancia_usuario);
 
 				//printf("Comenzando movimiento hacia adelante...");
 				//printf("Delta: %.4f \n",delta);
@@ -551,8 +546,6 @@ int main(int argc, char ** argv){
 				while(enc[0] < limite1  && ros::ok()){
 					//printf("%f %f %f \n",enc[0],limite1,msg.data[1]);
 					//printf("\n\n--->Avance 1");
-					//printf("\nEncoder izquierdo: %.4f", enc[0]);
-					//printf("\nEncoder derecho:   %.4f", enc[1]);
 					float error = fabs(enc[0]- posIzq0); 
 					//printf("\n**********%f-------------\n",error);
 					msg.data[0] = k + (3.0 * (vm - k) * (fabs(enc[0] - posIzq0) / (delta)));		//Ambos secciones de llantas, izquierda
@@ -567,8 +560,6 @@ int main(int argc, char ** argv){
 				while(enc[0] < limite2 && ros::ok()){
 					//printf("%f %f %f\n",enc[0],limite2,vm);
 					//printf("\n--->Avance 2");
-					//printf("\nEncoder izquierdo: %.4f", enc[0]);
-					//printf("\nEncoder derecho:   %.4f", enc[1]);
 					msg.data[0] = vm;
 					msg.data[1] = msg.data[0];
 					pubVelMotor.publish(msg);
@@ -581,8 +572,6 @@ int main(int argc, char ** argv){
 				while(enc[0] < posIzqFin && ros::ok()){
 					//printf("%f %f %f\n",enc[0],posIzqFin,msg.data[1]);
 					//printf("\n--->Avance 3");
-					//printf("\nEncoder izquierdo: %.4f", enc[0]);
-					//printf("\nEncoder derecho:   %.4f", enc[1]);
 					msg.data[0] = vm - (3.0 * (vm - k) * ((fabs(enc[0] - posIzq0) / (delta)) - (2.0 / 3.0)));
 					msg.data[1] = msg.data[0];
 					pubVelMotor.publish(msg);
@@ -603,14 +592,12 @@ int main(int argc, char ** argv){
 				//-----------------Primera parte del perfil trapezoidal-----------------------*/	
 
 				printf("\n\n--->Retrocedere");
-				printf("\n\tDistancia = %.4f\t[cm]",av);
+				printf("\n\tDistancia = %f [cm]",distancia_usuario);
 
 				while(enc[0]>limite1 && ros::ok()){
 					//printf("%f %f %f\n",enc[0],limite1,msg.data[0]);
 					//printf("\n ********%f*****+ \n",(enc[0]-posIzq0));
 					//printf("\n\n--->Reversa 1");
-					//printf("\nEncoder izquierdo: %.4f", enc[0]);
-					//printf("\nEncoder derecho:   %.4f", enc[1]);
 					msg.data[0] =(-k - (3.0 * (vm - k) * (-fabs(enc[0] - posIzq0) / (delta))));		//Ambas secciones de llantas, izquierda
 					msg.data[1] = msg.data[0];														//y derecha, giran hacia atras
 					pubVelMotor.publish(msg);
@@ -623,8 +610,6 @@ int main(int argc, char ** argv){
 				while(enc[0] > limite2 && ros::ok()){
 					//printf("%f %f %f\n",enc[0],limite2,-vm);
 					//printf("\n--->Reversa 2");
-					//printf("\nEncoder izquierdo: %.4f", enc[0]);
-					//printf("\nEncoder derecho:   %.4f", enc[1]);
 					msg.data[0] = -vm;
 					msg.data[1] = msg.data[0];
 					pubVelMotor.publish(msg);
@@ -637,8 +622,6 @@ int main(int argc, char ** argv){
 				while(enc[0] > posIzqFin && ros::ok()){
 					//printf("%f %f %f\n",enc[0],posIzqFin,msg.data[1]);
 					//printf("\n--->Reversa 3");
-					//printf("\nEncoder izquierdo: %.4f", enc[0]);
-					//printf("\nEncoder derecho:   %.4f", enc[1]);
 					msg.data[0] = -(((vm - k) / (delta * 0.33333 * -1)) * (enc[0] - posIzqFin)) - k;
 					msg.data[1] = msg.data[0];
 					pubVelMotor.publish(msg);
