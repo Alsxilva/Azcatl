@@ -1,7 +1,7 @@
 /*-------------------------------------------------------------
 Silva Guzmán Alejandro
 Dr. Savage Carmona
-Agosto 2019
+Septiembre 2019
 
 /*--------------------------------------------------------------*/
 
@@ -35,172 +35,55 @@ void callbackIzq(const std_msgs::Int64::ConstPtr& msg){
 	act = true;
 }
 
-/*------------------------------------Hokuyo------------------------------------*/	
+/*------------------------------------Fotoresistencias------------------------------------*/
 
-/*--------------------------------Variables--------------------------------*/	
+float photosensors[8];
+bool photosensors_flag;
+bool derecha_frente_flag = true, izquierda_frente_flag = true, derecha_atras_flag = true, izquierda_atras_flag = true;		//Banderas para determinar zona de obstaculo
 
-#define maxRange   80			//Rango de lecturas para el hokuyo
-#define minRange  -80								
-#define intervalRange  10 		//Grados para cada intervalo
-
-float umbral    =  0.2;			//Rango para determinar si se encuentra un obstaculo en determinada posicion					
-float promLeft  =	 0;
-float promRight =	 0;
-float promFront =	 0;
-float centralOut, derechaOut, izquierdaOut;
-float values[2][(maxRange - minRange) / intervalRange];	//Dos arreglos de 16 valores cada uno
-	
-bool hokuyoFlag = false;
-bool central_flag, centralDer_flag, centralIzq_flag, derecha_flag, izquierda_flag;		//Banderas para determinar zona de obstaculo
-
-/*--------------------------------Funcion--------------------------------*/	
-
-void callbackHokuyo(const sensor_msgs::LaserScan::ConstPtr &msg){
-
-	int size = ceil((msg -> angle_max - msg -> angle_min) / msg -> angle_increment);	//Redondea al entero de arriba mas cercano. 
-																						//En especifico, redondea a un numero entero el numero de lecturas 
-	float sumLeft  = 0;																	//"disponibles" del hokuyoque se mandan desde el nodo "hokuyo_node.py"							
-	float sumFront = 0;	
-	float sumRight = 0;	
-	float values[size];
-	
-	for(int i = 0 ; i < size ; i++){			//Almacena los valores del hokuyo en un arreglo
-		float val = msg -> ranges[i];
-		values[i] = msg -> ranges[i];
-		
-		if(val <= 0.01 && i!=0)					//Evita que se se almacenen valores muy pequeños
-			values[i] = 1.2 * values[i-1];
-			//float angle = (msg->angle_min+(msg->angle_increment*i))*180.0/3.1415926;
+void callbackPhotosensors(const std_msgs::Float32MultiArray::ConstPtr &msg){
+	for(int i=0; i<8; i++){
+		photosensors[i] = msg -> data[i];		
 	}
-
-	/*-------------------------------Region central-------------------------------*/
-
-	int centrali[2];
-	centralOut = 0;
-	float central[]  = {10,20};		//Rangos para la region central -> Checar documento "Estructura del robot".
-		
-	centrali[0] = floor((((pi * central[0]) / 180.0) - msg->angle_min) / (msg->angle_increment));	//floor((((pi * 10) / 180) - 1.824262524000698) / 0.006144178739745) = floor(-268.5028657) = -268
-	centrali[1] = floor((((pi * central[1]) / 180.0) - msg->angle_min) / (msg->angle_increment));	//floor((((pi * 20) / 180) - 1.824262524000698) / 0.006144178739745) = floor(-240.0966404) = -240
-				//Funcion "floor" redondea al entero de abajo mas cercano
-	
-	for(int i = centrali[0]; i < centrali[1]; i++)	
-		centralOut += values[i];
-	
-	centralOut /= (float)(centrali[1] - centrali[0]);
-	central_flag = false;
-	
-	if(centralOut < umbral)
-		central_flag = true;
-	
-	/*---------------------------Region Central-Izquierda---------------------------*/
-
-	/*int centralIzqi[2];
-	float centralIzqOut = 0;
-	float centralIzq[]  = {20,30};	//Rangos para la region Izquierda -> Checar documento "Estructura del robot".
-	
-	centralIzqi[0] =  ceil((((pi * centralIzq[0]) / 180.0) - msg->angle_min) / (msg->angle_increment));	// ceil((((pi * 20) / 180) - 1.824262524000698) / 0.006144178739745) = 	ceil(-240.0966404) = -241; ceil() para no tomar los mismos valores que en la region anterior
-	centralIzqi[1] = floor((((pi * centralIzq[1]) / 180.0) - msg->angle_min) / (msg->angle_increment));	//floor((((pi * 30) / 180) - 1.824262524000698) / 0.006144178739745) = floor(-211.6904152) = -211
-	
-	for(int i = centralIzqi[0]; i < centralIzqi[1] ; i++)	
-		centralIzqOut += values[i];
-
-	centralIzqOut /= (float)(centralIzqi[1] - centralIzqi[0]);
-	centralIzq_flag = false;
-	
-	if(centralIzqOut < umbral)
-		centralIzq_flag = true;
-	
-	/*---------------------------Region Central-Derecha---------------------------*/
-
-	/*int centralDeri[2];
-	float centralDerOut = 0;
-	float centralDer[]  = {0,10};	//Rangos para la region derecha -> Checar documento "Estructura del robot".
-
-	centralDeri[0] = floor((((pi * centralDer[0]) / 180.0) - msg->angle_min) / (msg->angle_increment));	//floor((((pi *  0) / 180) - 1.824262524000698) / 0.006144178739745) = floor(-296.9090909) = -296
-	centralDeri[1] = floor((((pi * centralDer[1]) / 180.0) - msg->angle_min) / (msg->angle_increment));	//floor((((pi * 10) / 180) - 1.824262524000698) / 0.006144178739745) = floor(-268.5028647) = -268
-
-	for(int i = centralDeri[0]; i<centralDeri[1] ; i++)	
-		centralDerOut += values[i];
-
-	centralDerOut /= (float)(centralDeri[1] - centralDeri[0]);
-	centralDer_flag = false;
-
-	if(centralDerOut < umbral)
-		centralDer_flag = true;
-
-	/*---------------------------Region Izquierda---------------------------*/
-
-	int izquierdai[2];
-	izquierdaOut = 0;
-	float izquierda[] ={80,90};		//Rangos para la region izquierda -> Checar documento "Estructura del robot".
-
-	izquierdai[0] = floor((((pi * izquierda[0]) / 180.0)-msg->angle_min) / (msg->angle_increment));		//floor((((pi * 80) / 180) - 1.824262524000698) / 0.006144178739745) = floor(-69.65928898) = -69
-	izquierdai[1] = floor((((pi * izquierda[1]) / 180.0)-msg->angle_min) / (msg->angle_increment));		//floor((((pi * 90) / 180) - 1.824262524000698) / 0.006144178739745) = floor(-41.25306374) = -41
-	
-	for(int i = izquierdai[0]; i < izquierdai[1] ; i++)	
-		izquierdaOut += values[i];
-	
-	izquierdaOut /= (float)(izquierdai[1] - izquierdai[0]);
-	izquierda_flag = false;
-	
-	if(izquierdaOut < umbral)
-		izquierda_flag = true;
-
-	/*---------------------------Region Derecha---------------------------*/
-
-	int derechai[2];
-	derechaOut = 0;
-	float derecha[] ={-50,-60}; 	//Rangos para la region derecha -> Checar documento "Estructura del robot".
-		
-	derechai[0] = floor((((pi * derecha[0]) / 180.0)-msg->angle_min)/(msg->angle_increment));		//floor((((pi * -50) / 180) - 1.824262524000698) / 0.006144178739745) = floor(-438.9402171) = -438	
-	derechai[1] = floor((((pi * derecha[1]) / 180.0)-msg->angle_min)/(msg->angle_increment));		//floor((((pi * -60) / 180) - 1.824262524000698) / 0.006144178739745) = floor(-467.3464424) = -467
-	
-	for(int i = derechai[1]; i < derechai[0] ; i++)	
-		derechaOut += values[i];
-	
-	derechaOut /= (float)(derechai[0] - derechai[1]);
-	derecha_flag = false;
-	
-	if(derechaOut < umbral)
-		derecha_flag = true;
-
-	/*---------------------------EndRangos---------------------------*/	
-
-	hokuyoFlag = true;
+  	printf("\n\n----->Datos recibidos correctamente :)");	
+    photosensors_flag = true;
 }
 
-void data_hokuyo(){
+void data_photosensors(){
 	/*---------------------------Datos obtenidos---------------------------*/
-	//Imprime datos obtenidos dentro de los rangos definidos. 
-	//Imprimira "False" si dentro de esa region NO hay obstaculoTrue
-	//Imprimira "True " si dentro de esa region SI hay obstaculo
+	//Imprime datos obtenidos de las fotoresistencias. 
+	//Imprimira "False" si dentro de esa region NO hay una intensidad de luz > intensidad_usuario
+	//Imprimira "True " si dentro de esa region SI hay una intensidad de luz > intensidad_usuario
 
-	printf("\n\nUmbral:\t\t%.4f\t\t[cm]",umbral*100);
-	printf("\nIzquierda:\t%.4f\t\t[cm]",	izquierdaOut); 	printf(izquierda_flag 	? "True" : "False");
-	printf("\nCentral:\t%.4f\t\t[cm]",		centralOut);	printf(central_flag 	? "True" : "False");
-	printf("\nDerecha:\t%.4f\t\t[cm]",		derechaOut);	printf(derecha_flag 	? "True" : "False");
-	//printf("\nCentral Izq:\t%.4f\t",	centralIzqOut); printf(centralIzq_flag 	? "False" : "True");
-	//printf("\nCentral Der:\t%.4f\t",	centralDerOut);	printf(centralDer_flag	? "False" : "True");
+	for(int i=0; i<8; i++){	
+		printf("\nFotoresistencia[",i+1,"] = ",photosensors[i]);	
+	}
+
+	printf("\nDerecha atras:", derecha_atras_flag 	    ? "True" : "False");
+	printf("\nDerecha frente:", derecha_frente_flag     ? "True" : "False");
+	printf("\nIzquierda atras:", izquierda_atras_flag   ? "True" : "False");
+	printf("\nIzquierda frente:", izquierda_frente_flag ? "True" : "False");
+
 }
 
 /*------------------------------------Inicio del Main------------------------------------*/	
 
 int main(int argc, char ** argv){
-	ros::init(argc, argv, "evasor_obstaculos_hokuyo");	//Inicio de ROS. Necesarios Argc y Argv. Tercer argumento: nombre del nodo.
-	ros::NodeHandle nh;						//Manipulador de nodos: nodo publico 
-	ros::Rate rate(20);						//Tasa/cantidad de frecuencia 
+	ros::init(argc, argv, "seguidor_de_luz");	//Inicio de ROS. Necesarios Argc y Argv. Tercer argumento: nombre del nodo.
+	ros::NodeHandle nh;							//Manipulador de nodos: nodo publico 
+	ros::Rate rate(20);							//Tasa-cantidad de frecuencia 
 	
 	/*------------------------------------Se instancian subscriptores y publicadores------------------------------------*/	
-
-	ros::Subscriber subHokuyo   	= nh.subscribe("/scan",1,callbackHokuyo);						//Regresa ROS subscriber y avisa a ROS la 'lectura'
-	ros::Subscriber encoizq 		= nh.subscribe("/encoIzq",1,callbackIzq);						//de mensajes y como maximo 1 mensaje en el buffer. 
-	ros::Subscriber encoder 		= nh.subscribe("/encoDer",1,callbackDer);			
+							
+	ros::Subscriber encoizq 		= nh.subscribe("/encoIzq",1,callbackIzq);					//Regresa ROS subscriber y avisa a ROS la 'lectura'				 
+	ros::Subscriber encoder 		= nh.subscribe("/encoDer",1,callbackDer);					//de mensajes y como maximo 1 mensaje en el buffer.				
+	ros::Subscriber subPhotoresist 	= nh.subscribe("/photosensors",1,callbackPhotosensors);			
 																									
 	ros::Publisher pubVelMotor 	= nh.advertise<std_msgs::Float32MultiArray>("/motor_speeds",1);		//Regresa ROS publisher y avisa a ROS la 'publicacion'  				
 																									//de mensajes y como maximo 1 mensaje en el buffer.
 	int disOffset	;
 	float dist, angle;
-	float distancia_usuario, angulo_usuario, umbral_usuario;
+	float distancia_usuario, angulo_usuario, intensidad_usuario;
 	std_msgs::Float32MultiArray msg;		//Variable que almacena mensaje que vamos a enviar 
 	msg.data.resize(2);						//Tamaño de la variable msg
 
@@ -212,57 +95,55 @@ int main(int argc, char ** argv){
 		printf("\n\nIntroduzca:\nEl numero de pasos deseado:");
 		scanf("%d",&total_steps);
 		printf("Distancia a detectar los obstaculos [cm]:");
-		scanf("%f",&umbral_usuario);
+		scanf("%f",&intensidad_usuario);
 		printf("Distancia a recorrer por paso [cm]:");
 		scanf("%f",&distancia_usuario);
 		printf("Angulo a girar por paso [grados]:");
 		scanf("%f",&angulo_usuario);
-
-		umbral = (umbral_usuario/100)/0.9;
 
 		step = 0;
 		int next_state = 0;				//Inicia maquina de estados
 
 		while (step < total_steps ){
 
-			hokuyoFlag = false;						//Bandera para detectar la conexion con el hokuyo
-			printf("\n\nEsperando a Hokuyo.");
+			photosensors_flag = false;						//Bandera para detectar la conexion con el hokuyo
+			printf("\n\nEsperando a Fotoresistencias.");
 			
-			while(!hokuyoFlag && ros::ok()){
-				printf("..");					//Imprimira ".." mientras espera respuesta de Hokuyo
+			while(!photosensors_flag && ros::ok()){
+				printf("..");						//Imprimira ".." mientras espera respuesta de Arduino(Fotoresistencias)
 				ros::spinOnce();
 				rate.sleep();
-			} 
+			}
 
 			printf("\n\n--------------Step: %d de: %d--------------", step+1, total_steps);
 			switch(next_state){
 				case 0:
-					if (!izquierda_flag & !central_flag & !derecha_flag){			// Sin obstaculo enfrente, avanza
+					if 			(!izquierda_frente_flag & !izquierda_atras_flag & !derecha_frente_flag & !derecha_atras_flag){			// Sin obstaculo enfrente, avanza
 						angle = 0;
 						dist = distancia_usuario;
                         next_state = 0;
                         step++;
-                        printf("\n\n----->Sin obstaculo \t\t");
-                        data_hokuyo();
+                        printf("\n\n----->Sin luz detectable \t\t");
+                        data_photosensors();
 	                }
 	                else{
-                        if 		(!izquierda_flag & !central_flag  &  derecha_flag){		// Obstaculo en la derecha
+                        if 		(!izquierda_frente_flag & !izquierda_atras_flag & !derecha_frente_flag & !derecha_atras_flag){		// Obstaculo en la derecha
                             next_state = 1;
                             printf("\n\n----->Obstaculo en la derecha \t\t");                          
-                  		    data_hokuyo();
+                  		    data_photosensors();
                         }
-                        else if ( izquierda_flag & !central_flag  & !derecha_flag){		// Obstaculo en la izquierda
+                        else if (!izquierda_frente_flag & !izquierda_atras_flag & !derecha_frente_flag & !derecha_atras_flag){		// Obstaculo en la izquierda
                             next_state = 3;
                             printf("\n\n----->Obstaculo en la izquierda \t\t");
-                            data_hokuyo();
+                            data_photosensors();
                         }
-                        else if (!izquierda_flag &  central_flag  & !derecha_flag){		// Obstaculo enfrente
+                        else if (!izquierda_frente_flag & !izquierda_atras_flag & !derecha_frente_flag & !derecha_atras_flag){		// Obstaculo enfrente
                             next_state = 5;
                             printf("\n\n----->Obstaculo enfrente \t\t");
-                            data_hokuyo();
+                            data_photosensors();
                         }
                         else printf("\n\n-----> Otro caso:\t");
-                        	data_hokuyo();
+                        	data_photosensors();
 	                }
 					break;
 

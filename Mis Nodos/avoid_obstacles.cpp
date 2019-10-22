@@ -6,6 +6,7 @@ Agosto 2019
 /*--------------------------------------------------------------*/
 
 #include <ros/ros.h>
+#include <std_msgs/Int8.h>
 #include <std_msgs/Int64.h>
 #include <std_msgs/Float32.h>
 #include <sensor_msgs/LaserScan.h>
@@ -39,15 +40,15 @@ void callbackIzq(const std_msgs::Int64::ConstPtr& msg){
 
 /*--------------------------------Variables--------------------------------*/	
 
+
 #define maxRange   80			//Rango de lecturas para el hokuyo
 #define minRange  -80								
 #define intervalRange  10 		//Grados para cada intervalo
 
-float umbral    =  0.2;			//Rango para determinar si se encuentra un obstaculo en determinada posicion					
-float promLeft  =	 0;
-float promRight =	 0;
-float promFront =	 0;
-float centralOut, derechaOut, izquierdaOut;
+float umbral   =  0.2;			//Rango para determinar si se encuentra un obstaculo en determinada posicion					
+float promLeft =	0;
+float promRight=	0;
+float promFront=	0;
 float values[2][(maxRange - minRange) / intervalRange];	//Dos arreglos de 16 valores cada uno
 	
 bool hokuyoFlag = false;
@@ -76,7 +77,7 @@ void callbackHokuyo(const sensor_msgs::LaserScan::ConstPtr &msg){
 	/*-------------------------------Region central-------------------------------*/
 
 	int centrali[2];
-	centralOut = 0;
+	float centralOut = 0;
 	float central[]  = {10,20};		//Rangos para la region central -> Checar documento "Estructura del robot".
 		
 	centrali[0] = floor((((pi * central[0]) / 180.0) - msg->angle_min) / (msg->angle_increment));	//floor((((pi * 10) / 180) - 1.824262524000698) / 0.006144178739745) = floor(-268.5028657) = -268
@@ -94,7 +95,7 @@ void callbackHokuyo(const sensor_msgs::LaserScan::ConstPtr &msg){
 	
 	/*---------------------------Region Central-Izquierda---------------------------*/
 
-	/*int centralIzqi[2];
+	int centralIzqi[2];
 	float centralIzqOut = 0;
 	float centralIzq[]  = {20,30};	//Rangos para la region Izquierda -> Checar documento "Estructura del robot".
 	
@@ -112,7 +113,7 @@ void callbackHokuyo(const sensor_msgs::LaserScan::ConstPtr &msg){
 	
 	/*---------------------------Region Central-Derecha---------------------------*/
 
-	/*int centralDeri[2];
+	int centralDeri[2];
 	float centralDerOut = 0;
 	float centralDer[]  = {0,10};	//Rangos para la region derecha -> Checar documento "Estructura del robot".
 
@@ -131,7 +132,7 @@ void callbackHokuyo(const sensor_msgs::LaserScan::ConstPtr &msg){
 	/*---------------------------Region Izquierda---------------------------*/
 
 	int izquierdai[2];
-	izquierdaOut = 0;
+	float izquierdaOut = 0;
 	float izquierda[] ={80,90};		//Rangos para la region izquierda -> Checar documento "Estructura del robot".
 
 	izquierdai[0] = floor((((pi * izquierda[0]) / 180.0)-msg->angle_min) / (msg->angle_increment));		//floor((((pi * 80) / 180) - 1.824262524000698) / 0.006144178739745) = floor(-69.65928898) = -69
@@ -149,7 +150,7 @@ void callbackHokuyo(const sensor_msgs::LaserScan::ConstPtr &msg){
 	/*---------------------------Region Derecha---------------------------*/
 
 	int derechai[2];
-	derechaOut = 0;
+	float derechaOut = 0;
 	float derecha[] ={-50,-60}; 	//Rangos para la region derecha -> Checar documento "Estructura del robot".
 		
 	derechai[0] = floor((((pi * derecha[0]) / 180.0)-msg->angle_min)/(msg->angle_increment));		//floor((((pi * -50) / 180) - 1.824262524000698) / 0.006144178739745) = floor(-438.9402171) = -438	
@@ -164,23 +165,22 @@ void callbackHokuyo(const sensor_msgs::LaserScan::ConstPtr &msg){
 	if(derechaOut < umbral)
 		derecha_flag = true;
 
-	/*---------------------------EndRangos---------------------------*/	
-
-	hokuyoFlag = true;
-}
-
-void data_hokuyo(){
 	/*---------------------------Datos obtenidos---------------------------*/
 	//Imprime datos obtenidos dentro de los rangos definidos. 
 	//Imprimira "False" si dentro de esa region NO hay obstaculoTrue
 	//Imprimira "True " si dentro de esa region SI hay obstaculo
 
-	printf("\n\nUmbral:\t\t%.4f\t\t[cm]",umbral*100);
-	printf("\nIzquierda:\t%.4f\t\t[cm]",	izquierdaOut); 	printf(izquierda_flag 	? "True" : "False");
-	printf("\nCentral:\t%.4f\t\t[cm]",		centralOut);	printf(central_flag 	? "True" : "False");
-	printf("\nDerecha:\t%.4f\t\t[cm]",		derechaOut);	printf(derecha_flag 	? "True" : "False");
+	printf("\n\nUmbral:\t\t%.4f\t\t[m]",	umbral);
+	printf("\nIzquierda:\t%.4f\t\t",	izquierdaOut); 	printf(izquierda_flag 	? "True" : "False");
+	printf("\nCentral:\t%.4f\t\t",		centralOut);	printf(central_flag 	? "True" : "False");
+	printf("\nDerecha:\t%.4f\t\t",		derechaOut);	printf(derecha_flag 	? "True" : "False");
 	//printf("\nCentral Izq:\t%.4f\t",	centralIzqOut); printf(centralIzq_flag 	? "False" : "True");
 	//printf("\nCentral Der:\t%.4f\t",	centralDerOut);	printf(centralDer_flag	? "False" : "True");
+
+	/*---------------------------EndRangos---------------------------*/	
+
+	hokuyoFlag = true;
+
 }
 
 /*------------------------------------Inicio del Main------------------------------------*/	
@@ -193,7 +193,7 @@ int main(int argc, char ** argv){
 	/*------------------------------------Se instancian subscriptores y publicadores------------------------------------*/	
 
 	ros::Subscriber subHokuyo   	= nh.subscribe("/scan",1,callbackHokuyo);						//Regresa ROS subscriber y avisa a ROS la 'lectura'
-	ros::Subscriber encoizq 		= nh.subscribe("/encoIzq",1,callbackIzq);						//de mensajes y como maximo 1 mensaje en el buffer. 
+	ros::Subscriber encoizq 		= nh.subscribe("/encoIzq",1,callbackIzq);						// de mensajes y como maximo 1 mensaje en el buffer. 
 	ros::Subscriber encoder 		= nh.subscribe("/encoDer",1,callbackDer);			
 																									
 	ros::Publisher pubVelMotor 	= nh.advertise<std_msgs::Float32MultiArray>("/motor_speeds",1);		//Regresa ROS publisher y avisa a ROS la 'publicacion'  				
@@ -213,12 +213,12 @@ int main(int argc, char ** argv){
 		scanf("%d",&total_steps);
 		printf("Distancia a detectar los obstaculos [cm]:");
 		scanf("%f",&umbral_usuario);
-		printf("Distancia a recorrer por paso [cm]:");
+		printf("Distancia a recorrer por paso :/ [cm]:");
 		scanf("%f",&distancia_usuario);
-		printf("Angulo a girar por paso [grados]:");
-		scanf("%f",&angulo_usuario);
+		//printf("\nAngulo a girar por paso [grados]:");
+		//scanf("%f",&angulo_usuario);
 
-		umbral = (umbral_usuario/100)/0.9;
+		umbral = umbral_usuario/100;
 
 		step = 0;
 		int next_state = 0;				//Inicia maquina de estados
@@ -243,26 +243,24 @@ int main(int argc, char ** argv){
                         next_state = 0;
                         step++;
                         printf("\n\n----->Sin obstaculo \t\t");
-                        data_hokuyo();
 	                }
 	                else{
                         if 		(!izquierda_flag & !central_flag  &  derecha_flag){		// Obstaculo en la derecha
                             next_state = 1;
-                            printf("\n\n----->Obstaculo en la derecha \t\t");                          
-                  		    data_hokuyo();
+                            printf("\n\n----->Obstaculo en la derecha \t\t");
                         }
                         else if ( izquierda_flag & !central_flag  & !derecha_flag){		// Obstaculo en la izquierda
                             next_state = 3;
                             printf("\n\n----->Obstaculo en la izquierda \t\t");
-                            data_hokuyo();
                         }
                         else if (!izquierda_flag &  central_flag  & !derecha_flag){		// Obstaculo enfrente
                             next_state = 5;
                             printf("\n\n----->Obstaculo enfrente \t\t");
-                            data_hokuyo();
                         }
                         else printf("\n\n-----> Otro caso:\t");
-                        	data_hokuyo();
+                        	printf(izquierda_flag 	? "True" : "False");
+							printf(central_flag 	? "True" : "False");
+							printf(derecha_flag 	? "True" : "False");
 	                }
 					break;
 
@@ -276,7 +274,7 @@ int main(int argc, char ** argv){
                		break;
 
 		        case 2: 			// Giro izquierdo
-	                angle = -angulo_usuario;
+	                angle = -45;
 					dist = 0;
 	                next_state = 0;
 	                step++;
@@ -293,7 +291,7 @@ int main(int argc, char ** argv){
 	                break;
 
 		        case 4: 			// Giro derecho
-	                angle = angulo_usuario;
+	                angle = 45;
 					dist = 0;
 	                next_state = 0;
 	                step++;
@@ -310,14 +308,14 @@ int main(int argc, char ** argv){
 	                break;
 
 		        case 6: 			// Giro izquierdo
-	                angle = -angulo_usuario;
+	                angle = -45;
 					dist = 0;
 	                next_state = 7;
 	                printf("\n\nCase 6");
 	                break;
 
 		        case 7:				// Giro izquierdo
-	                angle = -angulo_usuario;
+	                angle = -45;
 					dist = 0;
 	                next_state = 8;
 	                printf("\n\nCase 7");
@@ -338,14 +336,14 @@ int main(int argc, char ** argv){
 	                break;
 
 		        case 10: 			// Giro derecho
-	                angle = angulo_usuario;
+	                angle = 45;
 					dist = 0;
 	                next_state = 11;
 	                printf("\n\nCase 10");
 	                break;
 
 		        case 11: 			// Giro derecho
-	                angle = angulo_usuario	;
+	                angle = 45;
 					dist = 0;
 	                next_state = 0;
 	                printf("\n\nCase 11");
@@ -353,16 +351,16 @@ int main(int argc, char ** argv){
 	                break;
  			}
 
-			/*-----------------Inserción de valores: angulo de giro y distancia-----------------*/
+			/*--------------------------------Inserción de valores: angulo de giro y distancia--------------------------------*/
 
 			angle *=-1.9;						//Factor de corrección.
 			dist  *= 0.9;						//encFactor de corrección.
 
-			/*--------------------------Giro--------------------------*/	
+			/*------------------------------------Giro------------------------------------*/	
 
 			float angulo = angle;
-			int anterior = enc[0];				//Variable para determinar si cambio orientacion de la llanta
-			int actual   = enc[0] + 100;		//Variable para determinar si cambio orientacion de la llanta
+			int anterior = enc[0];			//Variable para determinar si cambio orientacion de la llanta
+			int actual   = enc[0] + 100;	//Variable para determinar si cambio orientacion de la llanta
 
 			//-------------------Loop para seguir recibiendo datos-----------------------/	
 
@@ -394,16 +392,18 @@ int main(int argc, char ** argv){
 
 			if(angulo > 0.001){		//Para angulo mayor a cero (rotación a la derecha)
 				
-			//-----------------------------Perfil trapezoidal-----------------------------------*/	
+				//---------------------------Perfil trapezoidal---------------------------------*/	
 
 				//-----------------Primera parte del perfil trapezoidal-----------------------*/	
 
 				printf("\n\n--->Dare giro a la derecha");
-				printf("\n\tGrados = %.4f\t[°]",angulo_usuario);
+				printf("\n\tGrados = %.4f\t[°]",angulo);
 
 				while(enc[0] < limite1 && ros::ok()){
 					//printf("%f %f \n",enc[0],limite1);
 					//printf("\n\n--->Giro Derecha 1");
+					//printf("\nEncoder izquierdo: %.4f", enc[0]);
+					//printf("\nEncoder derecho:   %.4f", enc[1]);
 					msg.data[0] = k + (3.0 * (vm - k) * (fabs(enc[0] - posIzq0)/(delta)));		//Las llantas del lado izquierdo giran hacia adelante
 				    msg.data[1] = -msg.data[0];													//mientras que las del lado derecho hacia atras.
 		       		pubVelMotor.publish(msg);		//Emite mensaje con la velocidad de los motores
@@ -411,10 +411,12 @@ int main(int argc, char ** argv){
 					rate.sleep();		
 				}
 
-				//-----------------Segunda parte del perfil trapezoidal-----------------*/	
+				//-----------------Segunda parte del perfil trapezoidal-----------------------*/	
 
 				while(enc[0] < limite2 && ros::ok()){
 					//printf("\n--->Giro Derecha 2");
+					//printf("\nEncoder izquierdo: %.4f", enc[0]);
+					//printf("\nEncoder derecho:   %.4f", enc[1]);
 					msg.data[0] = vm;				//Alcanza velocidad máxima
 					msg.data[1] = -vm;	
 		       		pubVelMotor.publish(msg);
@@ -422,10 +424,12 @@ int main(int argc, char ** argv){
 					rate.sleep();		
 				}
 
-				//-----------------Tercera parte del perfil trapezoidal-----------------*/	
+				//-----------------Tercera parte del perfil trapezoidal-----------------------*/	
 
 				while(enc[0] < posIzqFin && ros::ok()){
 					//printf("\n--->Giro Derecha 3");
+					//printf("\nEncoder izquierdo: %.4f", enc[0]);
+					//printf("\nEncoder derecho:   %.4f", enc[1]);
 					//printf("%f %f \n",enc[0],posIzqFin);
 					msg.data[0] = vm - (3.0 * (vm - k) * ((fabs(enc[0] - posIzq0) / (delta)) - (2.0 / 3.0)));
 					msg.data[1] = -msg.data[0];
@@ -438,15 +442,17 @@ int main(int argc, char ** argv){
 
 			}else if (angulo < -0.001){				//Para angulo menor a cero (rotacion a la izquierda)
 				
-				//---------------------------Perfil trapezoidal---------------------------*/	
+				//---------------------------Perfil trapezoidal---------------------------------*/	
 
-				//-----------------Primera parte del perfil trapezoidal-----------------*/	
+				//-----------------Primera parte del perfil trapezoidal-----------------------*/	
 
 				printf("\n\n--->Dare giro a la izquierda");
-				printf("\n\tGrados = %.4f\t[°]",angulo_usuario);
+				printf("\n\tGrados = %.4f\t[°]",angulo);
 				
 				while(enc[0] > limite1 && ros::ok()){
 					//printf("\n\n--->Giro Izquierda 1");
+					//printf("\nEncoder izquierdo: %.4f", enc[0]);
+					//printf("\nEncoder derecho:   %.4f", enc[1]);
 					msg.data[0] = (-k - (3.0 * (vm - k) * (-fabs(enc[0] - posIzq0)/(delta))));		//Las llantas del lado derecho giran hacia adelante
 					msg.data[1] = - msg.data[0];													//mientras que las del lado izquierdo hacia atras.
 					pubVelMotor.publish(msg);
@@ -454,10 +460,12 @@ int main(int argc, char ** argv){
 					rate.sleep();
 				}
 
-				//-----------------Segunda parte del perfil trapezoidal-----------------*/	
+				//-----------------Segunda parte del perfil trapezoidal-----------------------*/	
 
 				while(enc[0] > limite2 && ros::ok()){
 					//printf("\n--->Giro Izquierda 2");
+					//printf("\nEncoder izquierdo: %.4f", enc[0]);
+					//printf("\nEncoder derecho:   %.4f", enc[1]);
 					msg.data[0] = -vm;
 					msg.data[1] = vm;						//Alcanza velocidad máxima
 					pubVelMotor.publish(msg);
@@ -465,10 +473,12 @@ int main(int argc, char ** argv){
 					rate.sleep();
 				}
 
-				//-----------------Tercera parte del perfil trapezoidal-----------------*/	
+				//-----------------Tercera parte del perfil trapezoidal-----------------------*/	
 
 				while(enc[0] > posIzqFin && ros::ok()){
 					//printf("\n--->Giro Izquierda 3");
+					//printf("\nEncoder izquierdo: %.4f", enc[0]);
+					//printf("\nEncoder derecho:   %.4f", enc[1]);
 					msg.data[0] = -(((vm - k) / (delta * 0.33333 *-1)) * (enc[0] - posIzqFin)) - k;
 					msg.data[1] = -msg.data[0];
 					pubVelMotor.publish(msg);
@@ -480,6 +490,7 @@ int main(int argc, char ** argv){
 
 			
 			/*----------------------------Reset de encoders----------------------------*/	
+
 			for(int i = 0; i<10 ; i++){
 				msg.data[0] = 0.0;
 				msg.data[1] = 0.0;
@@ -487,10 +498,11 @@ int main(int argc, char ** argv){
 				ros::spinOnce();
 				rate.sleep();
 			}	
+
 			rate.sleep();							//Duerme al robot, determinado por la frecuencia indicada (20 Hz)
 			ros::Duration(1.0).sleep();				//Duerme al robot por un segundo
 			
-			/*--------------------------------------Avance--------------------------------------*/
+			/*--------------------------------------Avance---------------------------------------*/
 				
 			//printf("Comenzando el avance...");
 			float av = 10;
@@ -498,7 +510,7 @@ int main(int argc, char ** argv){
 			act = false;
 			actual = enc[0] + 100;
 
-			//-------------------Loop para seguir recibiendo datos-------------------//
+			//-------------------Loop para seguir recibiendo datos-----------------------//
 			while(anterior != actual){
 				act = false;
 				while(!act && ros::ok()){
@@ -512,7 +524,7 @@ int main(int argc, char ** argv){
 				actual = enc[0];
 			}
 
-			//-------------------Parámetros usados en el perfil trapezoidal de avance positivo-------------------*/	
+			//-------------------Parámetros usados en el perfil trapezoidal de avance positivo-----------------------*/	
 			
 			posIzq0 = enc[0];								//Posición actual del encoder 0: izquierdo
 			posDer0 = enc[1];								//Posición actual del encoder 1: derecho
@@ -523,12 +535,12 @@ int main(int argc, char ** argv){
 			limite2 = (delta * (2.0 / 3.0)) + posIzq0;		//Segundo segmento que recorre el robot: dos tercios de la diferencia de pi y pf mas la posicion inicial
 			//printf("%f %f \n",enc[0],limite1);
 
-			//---------------------------------------------Avance---------------------------------------------*/	
+			//---------------------------------------------Avance---------------------------------------------------*/	
 
 			if(av > 0.001){			//Si la distancia a moverse es positiva (hacia adelante)
 
 				printf("\n\n--->Avanzare");
-				printf("\n\tDistancia = %f [cm] %f",distancia_usuario, av);
+				printf("\n\tDistancia = %f [cm]",distancia_usuario);
 
 				//printf("Comenzando movimiento hacia adelante...");
 				//printf("Delta: %.4f \n",delta);
@@ -538,14 +550,16 @@ int main(int argc, char ** argv){
 				ros::spinOnce();
 				rate.sleep();
 
-				//---------------------------Perfil trapezoidal---------------------------*/	
+				//---------------------------Perfil trapezoidal---------------------------------*/	
 
-				//-----------------Primera parte del perfil trapezoidal-----------------*/	
+				//-----------------Primera parte del perfil trapezoidal-----------------------*/	
 
 
 				while(enc[0] < limite1  && ros::ok()){
 					//printf("%f %f %f \n",enc[0],limite1,msg.data[1]);
 					//printf("\n\n--->Avance 1");
+					//printf("\nEncoder izquierdo: %.4f", enc[0]);
+					//printf("\nEncoder derecho:   %.4f", enc[1]);
 					float error = fabs(enc[0]- posIzq0); 
 					//printf("\n**********%f-------------\n",error);
 					msg.data[0] = k + (3.0 * (vm - k) * (fabs(enc[0] - posIzq0) / (delta)));		//Ambos secciones de llantas, izquierda
@@ -555,11 +569,13 @@ int main(int argc, char ** argv){
 					rate.sleep();
 				}
 
-				//-----------------Segunda parte del perfil trapezoidal-----------------*/	
+				//-----------------Segunda parte del perfil trapezoidal-----------------------*/	
 
 				while(enc[0] < limite2 && ros::ok()){
 					//printf("%f %f %f\n",enc[0],limite2,vm);
 					//printf("\n--->Avance 2");
+					//printf("\nEncoder izquierdo: %.4f", enc[0]);
+					//printf("\nEncoder derecho:   %.4f", enc[1]);
 					msg.data[0] = vm;
 					msg.data[1] = msg.data[0];
 					pubVelMotor.publish(msg);
@@ -567,11 +583,13 @@ int main(int argc, char ** argv){
 					rate.sleep();
 				}
 
-				//-----------------Tercera parte del perfil trapezoidal-----------------*/	
+				//-----------------Tercera parte del perfil trapezoidal-----------------------*/	
 
 				while(enc[0] < posIzqFin && ros::ok()){
 					//printf("%f %f %f\n",enc[0],posIzqFin,msg.data[1]);
 					//printf("\n--->Avance 3");
+					//printf("\nEncoder izquierdo: %.4f", enc[0]);
+					//printf("\nEncoder derecho:   %.4f", enc[1]);
 					msg.data[0] = vm - (3.0 * (vm - k) * ((fabs(enc[0] - posIzq0) / (delta)) - (2.0 / 3.0)));
 					msg.data[1] = msg.data[0];
 					pubVelMotor.publish(msg);
@@ -581,15 +599,15 @@ int main(int argc, char ** argv){
 
 				printf("\n\n----Termine de avanzar----");
 
-			//-----------------------------------------------Retroceso-----------------------------------------------*/	
+			//-----------------------------------------------Retroceso---------------------------------------------------*/	
 
 			}else if(av < -0.001){		//Si la distancia a moverse es negativa (reversa)
 
 				//printf("Comenzando movimiento hacia atras...");
 
-				//---------------------------Perfil trapezoidal---------------------------*/
+				//---------------------------Perfil trapezoidal---------------------------------*/
 
-				//-----------------Primera parte del perfil trapezoidal-----------------*/	
+				//-----------------Primera parte del perfil trapezoidal-----------------------*/	
 
 				printf("\n\n--->Retrocedere");
 				printf("\n\tDistancia = %f [cm]",distancia_usuario);
@@ -598,6 +616,8 @@ int main(int argc, char ** argv){
 					//printf("%f %f %f\n",enc[0],limite1,msg.data[0]);
 					//printf("\n ********%f*****+ \n",(enc[0]-posIzq0));
 					//printf("\n\n--->Reversa 1");
+					//printf("\nEncoder izquierdo: %.4f", enc[0]);
+					//printf("\nEncoder derecho:   %.4f", enc[1]);
 					msg.data[0] =(-k - (3.0 * (vm - k) * (-fabs(enc[0] - posIzq0) / (delta))));		//Ambas secciones de llantas, izquierda
 					msg.data[1] = msg.data[0];														//y derecha, giran hacia atras
 					pubVelMotor.publish(msg);
@@ -605,11 +625,13 @@ int main(int argc, char ** argv){
 					rate.sleep();
 				}
 
-				//-----------------Segunda parte del perfil trapezoidal-----------------*/	
+				//-----------------Segunda parte del perfil trapezoidal-----------------------*/	
 
 				while(enc[0] > limite2 && ros::ok()){
 					//printf("%f %f %f\n",enc[0],limite2,-vm);
 					//printf("\n--->Reversa 2");
+					//printf("\nEncoder izquierdo: %.4f", enc[0]);
+					//printf("\nEncoder derecho:   %.4f", enc[1]);
 					msg.data[0] = -vm;
 					msg.data[1] = msg.data[0];
 					pubVelMotor.publish(msg);
@@ -617,11 +639,13 @@ int main(int argc, char ** argv){
 					rate.sleep();
 				}
 
-				//-----------------Tercera parte del perfil trapezoidal-----------------*/	
+				//-----------------Tercera parte del perfil trapezoidal-----------------------*/	
 
 				while(enc[0] > posIzqFin && ros::ok()){
 					//printf("%f %f %f\n",enc[0],posIzqFin,msg.data[1]);
 					//printf("\n--->Reversa 3");
+					//printf("\nEncoder izquierdo: %.4f", enc[0]);
+					//printf("\nEncoder derecho:   %.4f", enc[1]);
 					msg.data[0] = -(((vm - k) / (delta * 0.33333 * -1)) * (enc[0] - posIzqFin)) - k;
 					msg.data[1] = msg.data[0];
 					pubVelMotor.publish(msg);
@@ -633,6 +657,7 @@ int main(int argc, char ** argv){
 			}
 
 			/*----------------------------Reset de encoders----------------------------*/	
+
 			for(int i = 0; i<10 ; i++){
 				msg.data[0] = 0.0;
 				msg.data[1] = 0.0;
@@ -640,6 +665,7 @@ int main(int argc, char ** argv){
 				ros::spinOnce();
 				rate.sleep();
 			}
+			
 			rate.sleep();							//Duerme al robot, determinado por la frecuencia indicada (20 Hz)
 			ros::Duration(1.0).sleep();				//Duerme al robot por un segundo
 		}
