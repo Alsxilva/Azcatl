@@ -11,16 +11,22 @@ Septiembre 2019
 #include <sensor_msgs/LaserScan.h>
 #include <std_msgs/Float32MultiArray.h>
 	
-#define k 			0.1				//Constante de desfase 
-#define vm			0.50			//Velocidad maxima [m/s]
-#define bw  		0.235			//Ancho de la base del robøt  			[m]
-#define ppr			3200.0			//Pulsos por revolucion (Encoder)
-#define c_llant 	41.469 			//Circunferencia de cada llantas 		[cm]
-#define d_llants	23.50000		//Distancia entre llantas contrarias 	[cm]
-#define pi 			3.1415926		//Valor de pi
+#define k 					0.1				//Constante de desfase 
+#define vm					0.50			//Velocidad maxima [m/s]
+#define bw  				0.235			//Ancho de la base del robøt  			[m]
+#define ppr					3200.0			//Pulsos por revolucion (Encoder)
+#define c_llant 			41.469 			//Circunferencia de cada llantas 		[cm]
+#define d_llants			23.50000		//Distancia entre llantas contrarias 	[cm]
+#define pi 					3.1415926		//Valor de pi
+#define intensidad_debil 	341.0			//Definicion de intensidades:
+#define intensidad_media 	536.0			//---> Checar documentacion
+#define intensidad_alta 	731.0
+#define intensidad_maxima   1023.0
 
+int intensity;
 bool act = false;			 		//Bool para impedir que se avance mientras se gira y viceversa.
 volatile float enc[2]={0.0,0.0};
+
 
 /*------------------------------------Encoders------------------------------------*/	
 
@@ -39,30 +45,100 @@ void callbackIzq(const std_msgs::Int64::ConstPtr& msg){
 
 float photosensors[8];
 bool photosensors_flag;
-bool derecha_frente_flag = true, izquierda_frente_flag = true, derecha_atras_flag = true, izquierda_atras_flag = true;		//Banderas para determinar zona de obstaculo
+bool posicion_resistencias[8];		//Banderas para determinar zona de obstaculo
+									//Checar documentacion: 4 -> Frente 
+									//						3 -> Frente derecha
+									//						2 -> Derecha
+									//						1 -> Atras derecha
+									//						0 -> Atras 
+									//						7 -> Atras izquierda
+									//						6 -> Izquierda 
+									//						5 -> Frente izquierda
 
 void callbackPhotosensors(const std_msgs::Float32MultiArray::ConstPtr &msg){
-	for(int i=0; i<8; i++){
+	int i;
+
+	for(i=0; i<8; i++){
 		photosensors[i] = msg -> data[i];		
 	}
-  	printf("\n\n----->Datos recibidos correctamente :)");	
+
+  	printf("\n\n----->Datos de PR recibidos correctamente :)");	
+
+  	switch(intensity){
+		case 1: 
+			for (i=0; i<8; i++){
+				if (photosensors[i] < 50)
+					printf("\n\n--->ERROR: checar resistencia: ",i,"\n--->Posible falso contacto");
+				else if (photosensors[i] > intensidad_debil && photosensors[i] < intensidad_media)
+					posicion_resistencias[i] == true;
+				else posicion_resistencias[i] == false;
+			}
+			break;
+		case 2:
+			for (i=0; i<8; i++){
+					if (photosensors[i] < 50)
+						printf("\n\n--->ERROR: checar resistencia: ",i,"\n--->Posible falso contacto");
+					else if (photosensors[i] > intensidad_media && photosensors[i] < intensidad_alta)
+						posicion_resistencias[i] == true;
+					else posicion_resistencias[i] == false;
+				}
+			break;
+		case 3:
+			for (i=0; i<8; i++){
+				if (photosensors[i] < 50)
+					printf("\n\n--->ERROR: checar resistencia: ",i,"\n--->Posible falso contacto");
+				else if (photosensors[i] > intensidad_alta && photosensors[i] < intensidad_maxima)
+					posicion_resistencias[i] == true;
+				else posicion_resistencias[i] == false;
+			}
+			break;
+		default:
+			printf("\n\n---> ERROR: Seleccione una opcion valida");
+			break;
+
+	}
+
     photosensors_flag = true;
 }
 
 void data_photosensors(){
 	/*---------------------------Datos obtenidos---------------------------*/
 	//Imprime datos obtenidos de las fotoresistencias. 
-	//Imprimira "False" si dentro de esa region NO hay una intensidad de luz > intensidad_usuario
-	//Imprimira "True " si dentro de esa region SI hay una intensidad de luz > intensidad_usuario
+	//Imprimira "False" si dentro de esa region NO hay una intensidad de luz > intensidad_x
+	//Imprimira "True " si dentro de esa region SI hay una intensidad de luz > intensidad_x
 
 	for(int i=0; i<8; i++){	
-		printf("\nFotoresistencia[",i+1,"] = ",photosensors[i]);	
-	}
+		switch (i){
+			case 0:	
+				printf("\nAtras:\t\t\t");
+				break;
+			case 1:	
+				printf("\nAtras derecha:\t\t");
+				break;
+			case 2:	
+				printf("\nDerecha:\t\t");
+				break;
+			case 3:	
+				printf("\nFrente derecha:\t\t");
+				break;
+			case 4:	
+				printf("\nFrente:\t\t\t");
+				break;
+			case 5:	
+				printf("\nFrente izquierda:\t");
+				break;
+			case 6:	
+				printf("\nIzquierda:\t\t");
+				break;
+			case 7:	
+				printf("\nAtras izquierda:\t");
+				break;
 
-	printf("\nDerecha atras:", derecha_atras_flag 	    ? "True" : "False");
-	printf("\nDerecha frente:", derecha_frente_flag     ? "True" : "False");
-	printf("\nIzquierda atras:", izquierda_atras_flag   ? "True" : "False");
-	printf("\nIzquierda frente:", izquierda_frente_flag ? "True" : "False");
+		}
+		printf("\n\tFotoresistencia [%d] = %.2f\t",i,photosensors[i]);	
+		printf(posicion_resistencias[i] ? "True" : "False");
+
+	}
 
 }
 
@@ -77,13 +153,13 @@ int main(int argc, char ** argv){
 							
 	ros::Subscriber encoizq 		= nh.subscribe("/encoIzq",1,callbackIzq);					//Regresa ROS subscriber y avisa a ROS la 'lectura'				 
 	ros::Subscriber encoder 		= nh.subscribe("/encoDer",1,callbackDer);					//de mensajes y como maximo 1 mensaje en el buffer.				
-	ros::Subscriber subPhotoresist 	= nh.subscribe("/photosensors",1,callbackPhotosensors);			
+	ros::Subscriber subPhotoresist 	= nh.subscribe("/photoSensors",1,callbackPhotosensors);			
 																									
 	ros::Publisher pubVelMotor 	= nh.advertise<std_msgs::Float32MultiArray>("/motor_speeds",1);		//Regresa ROS publisher y avisa a ROS la 'publicacion'  				
 																									//de mensajes y como maximo 1 mensaje en el buffer.
-	int disOffset	;
+	int disOffset;
 	float dist, angle;
-	float distancia_usuario, angulo_usuario, intensidad_usuario;
+	float distancia_usuario, angulo_usuario;
 	std_msgs::Float32MultiArray msg;		//Variable que almacena mensaje que vamos a enviar 
 	msg.data.resize(2);						//Tamaño de la variable msg
 
@@ -92,13 +168,13 @@ int main(int argc, char ** argv){
 /*------------------------------------Maquina de estados para evadir obstaculos------------------------------------*/	
 
 		int total_steps, step=0;			
-		printf("\n\nIntroduzca:\nEl numero de pasos deseado:");
+		printf("\n\nIntroduzca:\nEl numero de pasos deseado: ");
 		scanf("%d",&total_steps);
-		printf("Distancia a detectar los obstaculos [cm]:");
-		scanf("%f",&intensidad_usuario);
-		printf("Distancia a recorrer por paso [cm]:");
+		printf("Intensidad a detectar de luz:\n\t\t1. Debil 30%c-50%c\n\t\t2. Media 50%c-70%c\n\t\t3. Alta  70%c-100%c\n\t\tOpcion: ",37,37,37,37,37,37);
+		scanf("%d",&intensity);
+		printf("Distancia a recorrer por paso [cm]: ");
 		scanf("%f",&distancia_usuario);
-		printf("Angulo a girar por paso [grados]:");
+		printf("Angulo a girar por paso [grados]: ");
 		scanf("%f",&angulo_usuario);
 
 		step = 0;
@@ -118,15 +194,15 @@ int main(int argc, char ** argv){
 			printf("\n\n--------------Step: %d de: %d--------------", step+1, total_steps);
 			switch(next_state){
 				case 0:
-					if 			(!izquierda_frente_flag & !izquierda_atras_flag & !derecha_frente_flag & !derecha_atras_flag){			// Sin obstaculo enfrente, avanza
+					if 			(next_state == 0){			// Sin obstaculo enfrente, avanza
 						angle = 0;
-						dist = distancia_usuario;
+						dist = 0;
                         next_state = 0;
                         step++;
-                        printf("\n\n----->Sin luz detectable \t\t");
+                        printf("\n\n----->Holi \t\t");
                         data_photosensors();
 	                }
-	                else{
+	                /*else{
                         if 		(!izquierda_frente_flag & !izquierda_atras_flag & !derecha_frente_flag & !derecha_atras_flag){		// Obstaculo en la derecha
                             next_state = 1;
                             printf("\n\n----->Obstaculo en la derecha \t\t");                          
@@ -149,7 +225,7 @@ int main(int argc, char ** argv){
 
 				/*---------------------------Obstaculo en la derecha---------------------------*/
 					
-				case 1: 			// Reversa
+				/*case 1: 			// Reversa
 	                angle = 0;
 					dist = -distancia_usuario;
 	                next_state = 2;
@@ -166,7 +242,7 @@ int main(int argc, char ** argv){
 
 	            /*---------------------------Obstaculo en la izquierda---------------------------*/
 
-		        case 3: 			// Reversa
+		        /*case 3: 			// Reversa
 	                angle = 0;
 					dist = -distancia_usuario;
 	                next_state = 4;
@@ -183,7 +259,7 @@ int main(int argc, char ** argv){
 
 	            /*---------------------------Obstaculo enfrente---------------------------*/
 
-		        case 5: 			// Reversa
+		        /*case 5: 			// Reversa
 	                angle = 0;
 					dist = -distancia_usuario;
 	                next_state = 6;
@@ -231,7 +307,7 @@ int main(int argc, char ** argv){
 	                next_state = 0;
 	                printf("\n\nCase 11");
 	                step++;
-	                break;
+	                break;*/
  			}
 
 			/*-----------------Inserción de valores: angulo de giro y distancia-----------------*/
