@@ -23,7 +23,7 @@ Septiembre 2019
 #define intensidad_alta 	731.0
 #define intensidad_maxima   1023.0
 
-int intensity;
+int intensity, total_steps;
 bool act = false;			 		//Bool para impedir que se avance mientras se gira y viceversa.
 volatile float enc[2]={0.0,0.0};
 
@@ -62,38 +62,45 @@ void callbackPhotosensors(const std_msgs::Float32MultiArray::ConstPtr &msg){
 		photosensors[i] = msg -> data[i];		
 	}
 
-  	printf("\n\n----->Datos de PR recibidos correctamente :)");	
+  	//printf("\n\n----->Datos de PR recibidos correctamente :)");	
 
   	switch(intensity){
 		case 1: 
 			for (i=0; i<8; i++){
-				if (photosensors[i] < 50)
-					printf("\n\n--->ERROR: checar resistencia: ",i,"\n--->Posible falso contacto");
+				if (photosensors[i] < 50){
+						printf("\n\n--->ERROR: checar resistencia: ",i,"\n--->Posible falso contacto");
+						total_steps = 0;	
+				}
 				else if (photosensors[i] > intensidad_debil && photosensors[i] < intensidad_media)
-					posicion_resistencias[i] == true;
-				else posicion_resistencias[i] == false;
+					posicion_resistencias[i] = true;
+				else posicion_resistencias[i] = false;
 			}
 			break;
 		case 2:
 			for (i=0; i<8; i++){
-					if (photosensors[i] < 50)
+					if (photosensors[i] < 50){
 						printf("\n\n--->ERROR: checar resistencia: ",i,"\n--->Posible falso contacto");
+						total_steps = 0;	
+					}
 					else if (photosensors[i] > intensidad_media && photosensors[i] < intensidad_alta)
-						posicion_resistencias[i] == true;
-					else posicion_resistencias[i] == false;
+						posicion_resistencias[i] = true;
+					else posicion_resistencias[i] = false;
 				}
 			break;
 		case 3:
 			for (i=0; i<8; i++){
-				if (photosensors[i] < 50)
-					printf("\n\n--->ERROR: checar resistencia: ",i,"\n--->Posible falso contacto");
+				if (photosensors[i] < 50){
+						printf("\n\n--->ERROR: checar resistencia: ",i,"\n--->Posible falso contacto");
+						total_steps = 0;	
+				}
 				else if (photosensors[i] > intensidad_alta && photosensors[i] < intensidad_maxima)
-					posicion_resistencias[i] == true;
-				else posicion_resistencias[i] == false;
+					posicion_resistencias[i] = true;
+				else posicion_resistencias[i] = false;
 			}
 			break;
 		default:
 			printf("\n\n---> ERROR: Seleccione una opcion valida");
+			total_steps = 0;	
 			break;
 
 	}
@@ -106,6 +113,14 @@ void data_photosensors(){
 	//Imprime datos obtenidos de las fotoresistencias. 
 	//Imprimira "False" si dentro de esa region NO hay una intensidad de luz > intensidad_x
 	//Imprimira "True " si dentro de esa region SI hay una intensidad de luz > intensidad_x
+
+	printf("\n\n\t\t\t\tIntensidad ");
+		if (intensity == 1)
+			printf("Baja: 341 a 536");
+		else if (intensity == 2)
+			printf("Media: 536 a 731");
+		else if(intensity == 3)
+			printf("Alta: 731 a 1023");
 
 	for(int i=0; i<8; i++){	
 		switch (i){
@@ -135,10 +150,10 @@ void data_photosensors(){
 				break;
 
 		}
-		printf("\n\tFotoresistencia [%d] = %.2f\t",i,photosensors[i]);	
+		printf("\tFotoresistencia [%d] = %.2f\t",i,photosensors[i]);	
 		printf(posicion_resistencias[i] ? "True" : "False");
 
-	}
+	} 
 
 }
 
@@ -167,11 +182,12 @@ int main(int argc, char ** argv){
 		
 /*------------------------------------Maquina de estados para evadir obstaculos------------------------------------*/	
 
-		int total_steps, step=0;			
-		printf("\n\nIntroduzca:\nEl numero de pasos deseado: ");
-		scanf("%d",&total_steps);
+		int step=0;			
+		printf("\n\nIntroduzca:\n");
 		printf("Intensidad a detectar de luz:\n\t\t1. Debil 30%c-50%c\n\t\t2. Media 50%c-70%c\n\t\t3. Alta  70%c-100%c\n\t\tOpcion: ",37,37,37,37,37,37);
 		scanf("%d",&intensity);
+		printf("El numero de pasos deseado: ");
+		scanf("%d",&total_steps);
 		printf("Distancia a recorrer por paso [cm]: ");
 		scanf("%f",&distancia_usuario);
 		printf("Angulo a girar por paso [grados]: ");
@@ -183,7 +199,7 @@ int main(int argc, char ** argv){
 		while (step < total_steps ){
 
 			photosensors_flag = false;						//Bandera para detectar la conexion con el hokuyo
-			printf("\n\nEsperando a Fotoresistencias.");
+			printf("\n\nEsperando a fotoresistencias desde Arduino.");
 			
 			while(!photosensors_flag && ros::ok()){
 				printf("..");						//Imprimira ".." mientras espera respuesta de Arduino(Fotoresistencias)
@@ -199,7 +215,7 @@ int main(int argc, char ** argv){
 						dist = 0;
                         next_state = 0;
                         step++;
-                        printf("\n\n----->Holi \t\t");
+                        printf("\n\n----->Llegue :) \t\t");
                         data_photosensors();
 	                }
 	                /*else{
@@ -323,10 +339,12 @@ int main(int argc, char ** argv){
 
 			//-------------------Loop para seguir recibiendo datos-----------------------/	
 
+			printf("\n\n1-->Esperando motores.");
 			while(anterior != actual){
 				act = false;
+				printf(".");
 				while(!act && ros::ok()){				
-					printf("\n1-->Esperando motores...");
+					printf(".");
 					//printf("\nEncoder derecho  : %.4f", enc[1]);
 					//printf("\nEncoder izquierdo: %.4f", enc[0]);
 					ros::spinOnce();								//Recibe llamadas de vuelta al subscriber
@@ -456,10 +474,13 @@ int main(int argc, char ** argv){
 			actual = enc[0] + 100;
 
 			//-------------------Loop para seguir recibiendo datos-------------------//
+			
+			printf("\n\n2-->Esperando motores.");
 			while(anterior != actual){
 				act = false;
-				while(!act && ros::ok()){
-					printf("\n2-->Esperando motores...");
+				printf(".");
+				while(!act && ros::ok()){				
+					printf(".");
 					//printf("\nEncoder derecho  : %.4f", enc[1]);
 					//printf("\nEncoder izquierdo: %.4f", enc[0]);
 					ros::spinOnce();
