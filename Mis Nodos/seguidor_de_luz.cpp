@@ -9,7 +9,7 @@ Septiembre 2019
 #include <std_msgs/Int64.h>
 #include <std_msgs/Float32.h>
 #include <sensor_msgs/LaserScan.h>
-#include <std_msgs/Float32MultiArray.h>
+#include <std_msgs/Float32MultiArray.h>	
 	
 #define k 					0.1				//Constante de desfase 
 #define vm					0.50			//Velocidad maxima [m/s]
@@ -21,6 +21,7 @@ Septiembre 2019
 #define intensidad_debil 	341.0			//Definicion de intensidades:
 #define intensidad_media 	536.0			//---> Checar documentacion
 #define intensidad_alta 	731.0
+#define intensidad_muy_alta	876.0
 #define intensidad_maxima   1023.0
 
 int intensity, total_steps;
@@ -43,6 +44,7 @@ void callbackIzq(const std_msgs::Int64::ConstPtr& msg){
 
 /*------------------------------------Fotoresistencias------------------------------------*/
 
+int posicion_luz = 5;
 float photosensors[8];
 bool photosensors_flag;
 bool posicion_resistencias[8];		//Banderas para determinar zona de obstaculo
@@ -93,7 +95,18 @@ void callbackPhotosensors(const std_msgs::Float32MultiArray::ConstPtr &msg){
 						printf("\n\n--->ERROR: checar resistencia: ",i,"\n--->Posible falso contacto");
 						total_steps = 0;	
 				}
-				else if (photosensors[i] > intensidad_alta && photosensors[i] < intensidad_maxima)
+				else if (photosensors[i] > intensidad_alta && photosensors[i] < intensidad_muy_alta)
+					posicion_resistencias[i] = true;
+				else posicion_resistencias[i] = false;
+			}
+			break;
+		case 4:
+			for (i=0; i<8; i++){
+				if (photosensors[i] < 50){
+						printf("\n\n--->ERROR: checar resistencia: ",i,"\n--->Posible falso contacto");
+						total_steps = 0;	
+				}
+				else if (photosensors[i] > intensidad_muy_alta && photosensors[i] < intensidad_maxima)
 					posicion_resistencias[i] = true;
 				else posicion_resistencias[i] = false;
 			}
@@ -104,6 +117,15 @@ void callbackPhotosensors(const std_msgs::Float32MultiArray::ConstPtr &msg){
 			break;
 
 	}
+
+	if 		(photosensors[5] > photosensors[1] & photosensors[5] > photosensors[3] & photosensors[5] > photosensors[7])
+		posicion_luz = 3;
+	else if (photosensors[3] > photosensors[1] & photosensors[3] > photosensors[5] & photosensors[3] > photosensors[7])
+		posicion_luz = 2;
+	else if (photosensors[7] > photosensors[1] & photosensors[7] > photosensors[3] & photosensors[7] > photosensors[5])
+		posicion_luz = 1;
+	else if (photosensors[1] > photosensors[3] & photosensors[1] > photosensors[5] & photosensors[1] > photosensors[7])
+		posicion_luz = 0;
 
     photosensors_flag = true;
 }
@@ -120,7 +142,10 @@ void data_photosensors(){
 		else if (intensity == 2)
 			printf("Media: 536 a 731");
 		else if(intensity == 3)
-			printf("Alta: 731 a 1023");
+			printf("Alta: 731 a 875");
+		else if(intensity == 4)
+			printf("Muy Alta: 875 a 1023");
+
 
 	for(int i=0; i<8; i++){	
 		switch (i){
@@ -148,13 +173,10 @@ void data_photosensors(){
 			case 7:	
 				printf("\nAtras izquierda:\t");
 				break;
-
 		}
 		printf("\tFotoresistencia [%d] = %.2f\t",i,photosensors[i]);	
 		printf(posicion_resistencias[i] ? "True" : "False");
-
 	} 
-
 }
 
 /*------------------------------------Inicio del Main------------------------------------*/	
@@ -184,7 +206,7 @@ int main(int argc, char ** argv){
 
 		int step=0;			
 		printf("\n\nIntroduzca:\n");
-		printf("Intensidad a detectar de luz:\n\t\t1. Debil 30%c-50%c\n\t\t2. Media 50%c-70%c\n\t\t3. Alta  70%c-100%c\n\t\tOpcion: ",37,37,37,37,37,37);
+		printf("Intensidad a detectar de luz:\n\t\t1. Debil 30%c-50%c\n\t\t2. Media 50%c-70%c\n\t\t3. Alta  70%c-90%c\n\t\t4. Muy Alta  90%c-100%c\n\t\tOpcion: ",37,37,37,37,37,37,37,37);
 		scanf("%d",&intensity);
 		printf("El numero de pasos deseado: ");
 		scanf("%d",&total_steps);
@@ -210,40 +232,49 @@ int main(int argc, char ** argv){
 			printf("\n\n--------------Step: %d de: %d--------------", step+1, total_steps);
 			switch(next_state){
 				case 0:
-					if 			(next_state == 0){			// Sin obstaculo enfrente, avanza
-						angle = 0;
+					if (posicion_resistencias[0] | posicion_resistencias[1] | posicion_resistencias[2] | posicion_resistencias[3] |
+						posicion_resistencias[4] | posicion_resistencias[5] | posicion_resistencias[6] | posicion_resistencias[7]){			// Sin obstaculo enfrente, avanza
+						angle = 0;  
 						dist = 0;
                         next_state = 0;
-                        step++;
-                        printf("\n\n----->Llegue :) \t\t");
+                        step = total_steps;
+                        printf("\n\n----->Llegue :D \t\t");
                         data_photosensors();
 	                }
-	                /*else{
-                        if 		(!izquierda_frente_flag & !izquierda_atras_flag & !derecha_frente_flag & !derecha_atras_flag){		// Obstaculo en la derecha
+	                else{
+                        if  (posicion_luz == 3){			// Luz Adelante Izquierda
                             next_state = 1;
-                            printf("\n\n----->Obstaculo en la derecha \t\t");                          
+                            printf("\n\n----->Luz Adelante Izquierda \t\t");                          
                   		    data_photosensors();
                         }
-                        else if (!izquierda_frente_flag & !izquierda_atras_flag & !derecha_frente_flag & !derecha_atras_flag){		// Obstaculo en la izquierda
+                        else if (posicion_luz == 2){		// Luz Adelante Derecha
                             next_state = 3;
-                            printf("\n\n----->Obstaculo en la izquierda \t\t");
+                            printf("\n\n----->Luz Adelante Derecha \t\t");
                             data_photosensors();
                         }
-                        else if (!izquierda_frente_flag & !izquierda_atras_flag & !derecha_frente_flag & !derecha_atras_flag){		// Obstaculo enfrente
+                        else if (posicion_luz == 1){		// Luz Atras Izquierda
                             next_state = 5;
-                            printf("\n\n----->Obstaculo enfrente \t\t");
+                            printf("\n\n----->Luz Atras Izquierda \t\t");
                             data_photosensors();
                         }
-                        else printf("\n\n-----> Otro caso:\t");
+                        else if (posicion_luz == 0){		//Luz Atras Derecha
+                        	next_state = 7;
+                        	printf("\n\n-----> Luz Atras Derecha \t\t");
                         	data_photosensors();
+                        }	
+                        else{
+                        	printf("\n\n-----> Otro caso:\t");
+                        	data_photosensors();
+                        }
 	                }
+
 					break;
 
-				/*---------------------------Obstaculo en la derecha---------------------------*/
+ 				/*---------------------------Luz Frente Izquierda---------------------------*/
 					
-				/*case 1: 			// Reversa
+				case 1: 			// Adelante
 	                angle = 0;
-					dist = -distancia_usuario;
+					dist = distancia_usuario;
 	                next_state = 2;
 	                printf("\n\nCase 1");
                		break;
@@ -256,11 +287,11 @@ int main(int argc, char ** argv){
 	                printf("\n\nCase 2");
 	                break;
 
-	            /*---------------------------Obstaculo en la izquierda---------------------------*/
+	            /*---------------------------Luz Frente Derecha---------------------------*/
 
-		        /*case 3: 			// Reversa
+		        case 3: 			// Adelante
 	                angle = 0;
-					dist = -distancia_usuario;
+					dist = distancia_usuario;
 	                next_state = 4;
 	                printf("\n\nCase 3");
 	                break;
@@ -273,57 +304,38 @@ int main(int argc, char ** argv){
 	                printf("\n\nCase 4");
 	                break;
 
-	            /*---------------------------Obstaculo enfrente---------------------------*/
+	            /*---------------------------Luz Detras Izquierda---------------------------*/
 
-		        /*case 5: 			// Reversa
-	                angle = 0;
-					dist = -distancia_usuario;
+		        case 5: 			// Giro izquierdo
+	                angle = -angulo_usuario;
+					dist = 0;
 	                next_state = 6;
 	                printf("\n\nCase 5");
 	                break;
 
-		        case 6: 			// Giro izquierdo
+		        case 6:				// Giro izquierdo
 	                angle = -angulo_usuario;
 					dist = 0;
-	                next_state = 7;
+	                next_state = 0;
 	                printf("\n\nCase 6");
 	                break;
 
-		        case 7:				// Giro izquierdo
-	                angle = -angulo_usuario;
+	            /*---------------------------Luz Detras Derecha---------------------------*/
+
+	            case 7: 			// Giro derecho
+	                angle = angulo_usuario;
 					dist = 0;
-	                next_state = 8;
+	                next_state = 6;
 	                printf("\n\nCase 7");
 	                break;
 
-		        case 8: 			// Avanza
-	                angle = 0;
-					dist = distancia_usuario;
-	                next_state = 9;
+		        case 8:				// Giro derecho
+	                angle = angulo_usuario;
+					dist = 0;
+	                next_state = 0;
 	                printf("\n\nCase 8");
 	                break;
 
-		        case 9: 			// Avanza
-	                angle = 0;
-					dist = distancia_usuario;
-	                next_state = 10;
-	                printf("\n\nCase 9");
-	                break;
-
-		        case 10: 			// Giro derecho
-	                angle = angulo_usuario;
-					dist = 0;
-	                next_state = 11;
-	                printf("\n\nCase 10");
-	                break;
-
-		        case 11: 			// Giro derecho
-	                angle = angulo_usuario	;
-					dist = 0;
-	                next_state = 0;
-	                printf("\n\nCase 11");
-	                step++;
-	                break;*/
  			}
 
 			/*-----------------Inserción de valores: angulo de giro y distancia-----------------*/
@@ -586,7 +598,7 @@ int main(int argc, char ** argv){
 				//-----------------Segunda parte del perfil trapezoidal-----------------*/	
 
 				while(enc[0] > limite2 && ros::ok()){
-					//printf("%f %f %f\n",enc[0],limite2,-vm);
+						//printf("%f %f %f\n",enc[0],limite2,-vm);
 					//printf("\n--->Reversa 2");
 					msg.data[0] = -vm;
 					msg.data[1] = msg.data[0];
