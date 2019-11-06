@@ -69,7 +69,7 @@ void callbackPhotosensors(const std_msgs::Float32MultiArray::ConstPtr &msg){
   	switch(intensity){
 		case 1: 
 			for (i=0; i<8; i++){
-				if (photosensors[i] < 50){
+				if (photosensors[i] < 5){
 						printf("\n\n--->ERROR: checar resistencia: ",i,"\n--->Posible falso contacto");
 						total_steps = 0;	
 				}
@@ -80,7 +80,7 @@ void callbackPhotosensors(const std_msgs::Float32MultiArray::ConstPtr &msg){
 			break;
 		case 2:
 			for (i=0; i<8; i++){
-					if (photosensors[i] < 50){
+					if (photosensors[i] < 5){
 						printf("\n\n--->ERROR: checar resistencia: ",i,"\n--->Posible falso contacto");
 						total_steps = 0;	
 					}
@@ -91,7 +91,7 @@ void callbackPhotosensors(const std_msgs::Float32MultiArray::ConstPtr &msg){
 			break;
 		case 3:
 			for (i=0; i<8; i++){
-				if (photosensors[i] < 50){
+				if (photosensors[i] < 5){
 						printf("\n\n--->ERROR: checar resistencia: ",i,"\n--->Posible falso contacto");
 						total_steps = 0;	
 				}
@@ -102,7 +102,7 @@ void callbackPhotosensors(const std_msgs::Float32MultiArray::ConstPtr &msg){
 			break;
 		case 4:
 			for (i=0; i<8; i++){
-				if (photosensors[i] < 50){
+				if (photosensors[i] < 5){
 						printf("\n\n--->ERROR: checar resistencia: ",i,"\n--->Posible falso contacto");
 						total_steps = 0;	
 				}
@@ -262,6 +262,10 @@ int main(int argc, char ** argv){
                         	printf("\n\n-----> Luz Atras Derecha \t\t");
                         	data_photosensors();
                         }	
+                        else if (posicion_luz == 5){
+                        	printf("\n\n-----> ERROR:\t");
+                        	data_photosensors();
+                        }
                         else{
                         	printf("\n\n-----> Otro caso:\t");
                         	data_photosensors();
@@ -325,7 +329,7 @@ int main(int argc, char ** argv){
 	            case 7: 			// Giro derecho
 	                angle = angulo_usuario;
 					dist = 0;
-	                next_state = 6;
+	                next_state = 8;
 	                printf("\n\nCase 7");
 	                break;
 
@@ -340,8 +344,8 @@ int main(int argc, char ** argv){
 
 			/*-----------------Inserción de valores: angulo de giro y distancia-----------------*/
 
-			angle *=-1.9;						//Factor de corrección.
-			dist  *= 0.9;						//encFactor de corrección.
+			angle *= 1.35;						//Factor de corrección.
+			dist  *= 0.784;						//Factor de corrección.
 
 			/*--------------------------Giro--------------------------*/	
 
@@ -386,7 +390,7 @@ int main(int argc, char ** argv){
 				//-----------------Primera parte del perfil trapezoidal-----------------------*/	
 
 				printf("\n\n--->Dare giro a la derecha");
-				printf("\n\tGrados = %.4f\t[°]",angulo_usuario);
+				printf("\n\tGrados = %.4f\t[°] %.4f\t",angulo_usuario, angulo);
 
 				while(enc[0] < limite1 && ros::ok()){
 					//printf("%f %f \n",enc[0],limite1);
@@ -430,7 +434,7 @@ int main(int argc, char ** argv){
 				//-----------------Primera parte del perfil trapezoidal-----------------*/	
 
 				printf("\n\n--->Dare giro a la izquierda");
-				printf("\n\tGrados = %.4f\t[°]",angulo_usuario);
+				printf("\n\tGrados = %.4f\t[°] %.4f\t",angulo_usuario, angulo);
 				
 				while(enc[0] > limite1 && ros::ok()){
 					//printf("\n\n--->Giro Izquierda 1");

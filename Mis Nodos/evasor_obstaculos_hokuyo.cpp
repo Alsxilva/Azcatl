@@ -355,8 +355,8 @@ int main(int argc, char ** argv){
 
 			/*-----------------Inserción de valores: angulo de giro y distancia-----------------*/
 
-			angle *=-1.9;						//Factor de corrección.
-			dist  *= 0.9;						//encFactor de corrección.
+			angle *= 1.35;						//Factor de corrección.
+			dist  *= 0.784;						//Factor de corrección.
 
 			/*--------------------------Giro--------------------------*/	
 
