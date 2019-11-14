@@ -48,14 +48,14 @@ int posicion_luz = 5;
 float photosensors[8];
 bool photosensors_flag;
 bool posicion_resistencias[8];		//Banderas para determinar zona de obstaculo
-									//Checar documentacion: 4 -> Frente 
-									//						3 -> Frente derecha
+									//Checar documentacion: 0 -> Frente 
+									//						1 -> Frente derecha
 									//						2 -> Derecha
-									//						1 -> Atras derecha
-									//						0 -> Atras 
-									//						7 -> Atras izquierda
+									//						3 -> Atras derecha
+									//						4 -> Atras 
+									//						5 -> Atras izquierda
 									//						6 -> Izquierda 
-									//						5 -> Frente izquierda
+									//						7 -> Frente izquierda
 
 void callbackPhotosensors(const std_msgs::Float32MultiArray::ConstPtr &msg){
 	int i;
@@ -117,14 +117,14 @@ void callbackPhotosensors(const std_msgs::Float32MultiArray::ConstPtr &msg){
 			break;
 
 	}
-
-	if 		(photosensors[5] > photosensors[1] & photosensors[5] > photosensors[3] & photosensors[5] > photosensors[7])
+	
+	if 		(photosensors[7] > photosensors[1] & photosensors[7] > photosensors[3] & photosensors[7] > photosensors[5])
 		posicion_luz = 3;
-	else if (photosensors[3] > photosensors[1] & photosensors[3] > photosensors[5] & photosensors[3] > photosensors[7])
-		posicion_luz = 2;
-	else if (photosensors[7] > photosensors[1] & photosensors[7] > photosensors[3] & photosensors[7] > photosensors[5])
-		posicion_luz = 1;
 	else if (photosensors[1] > photosensors[3] & photosensors[1] > photosensors[5] & photosensors[1] > photosensors[7])
+		posicion_luz = 2;
+	else if	(photosensors[5] > photosensors[1] & photosensors[5] > photosensors[3] & photosensors[5] > photosensors[7])
+		posicion_luz = 1;
+	else if (photosensors[3] > photosensors[1] & photosensors[3] > photosensors[5] & photosensors[3] > photosensors[7])
 		posicion_luz = 0;
 
     photosensors_flag = true;
@@ -136,45 +136,45 @@ void data_photosensors(){
 	//Imprimira "False" si dentro de esa region NO hay una intensidad de luz > intensidad_x
 	//Imprimira "True " si dentro de esa region SI hay una intensidad de luz > intensidad_x
 
-	printf("\n\n\t\t\t\tIntensidad ");
+	printf("\n\n\t\t\tIntensidad ");
 		if (intensity == 1)
-			printf("Baja: 341 a 536");
+			printf("Baja: 341 a 536\t\tEstado:");
 		else if (intensity == 2)
-			printf("Media: 536 a 731");
+			printf("Media: 536 a 731\t\tEstado:");
 		else if(intensity == 3)
-			printf("Alta: 731 a 875");
+			printf("Alta: 731 a 875\t\tEstado:");
 		else if(intensity == 4)
-			printf("Muy Alta: 875 a 1023");
+			printf("Muy Alta: 875 a 1023\t\tEstado:");
 
 
 	for(int i=0; i<8; i++){	
 		switch (i){
 			case 0:	
-				printf("\nAtras:\t\t\t");
+				printf("\nFrente:\t\t");
 				break;
 			case 1:	
-				printf("\nAtras derecha:\t\t");
+				printf("\nFrente derecha:\t");
 				break;
 			case 2:	
-				printf("\nDerecha:\t\t");
+				printf("\nDerecha:\t");
 				break;
 			case 3:	
-				printf("\nFrente derecha:\t\t");
+				printf("\nAtras derecha:\t");
 				break;
 			case 4:	
-				printf("\nFrente:\t\t\t");
+				printf("\nAtras:\t\t");
 				break;
 			case 5:	
-				printf("\nFrente izquierda:\t");
+				printf("\nAtras izquierda:");
 				break;
 			case 6:	
-				printf("\nIzquierda:\t\t");
+				printf("\nIzquierda:\t");
 				break;
 			case 7:	
-				printf("\nAtras izquierda:\t");
+				printf("\nFrente izquierda:");
 				break;
 		}
-		printf("\tFotoresistencia [%d] = %.2f\t",i,photosensors[i]);	
+		printf("\tFotoresistencia [%d] = %.2f\t\t",i,photosensors[i]);	
 		printf(posicion_resistencias[i] ? "True" : "False");
 	} 
 }
@@ -221,7 +221,8 @@ int main(int argc, char ** argv){
 		while (step < total_steps ){
 
 			photosensors_flag = false;						//Bandera para detectar la conexion con el hokuyo
-			printf("\n\nEsperando a fotoresistencias desde Arduino.");
+			printf("\n\n------------------Step: %d de: %d------------------", step+1, total_steps);
+			printf("\n\nEsperando a Arduino.");
 			
 			while(!photosensors_flag && ros::ok()){
 				printf("..");						//Imprimira ".." mientras espera respuesta de Arduino(Fotoresistencias)
@@ -229,7 +230,6 @@ int main(int argc, char ** argv){
 				rate.sleep();
 			}
 
-			printf("\n\n--------------Step: %d de: %d--------------", step+1, total_steps);
 			switch(next_state){
 				case 0:
 					if (posicion_resistencias[0] | posicion_resistencias[1] | posicion_resistencias[2] | posicion_resistencias[3] |
@@ -280,7 +280,7 @@ int main(int argc, char ** argv){
 	                angle = 0;
 					dist = distancia_usuario;
 	                next_state = 2;
-	                printf("\n\nCase 1");
+	                printf("\n\nCase 1: avanzo");
                		break;
 
 		        case 2: 			// Giro izquierdo
@@ -288,7 +288,7 @@ int main(int argc, char ** argv){
 					dist = 0;
 	                next_state = 0;
 	                step++;
-	                printf("\n\nCase 2");
+	                printf("\n\nCase 2: giro izquierdo");
 	                break;
 
 	            /*---------------------------Luz Frente Derecha---------------------------*/
@@ -297,7 +297,7 @@ int main(int argc, char ** argv){
 	                angle = 0;
 					dist = distancia_usuario;
 	                next_state = 4;
-	                printf("\n\nCase 3");
+	                printf("\n\nCase 3: avanzo");
 	                break;
 
 		        case 4: 			// Giro derecho
@@ -305,7 +305,7 @@ int main(int argc, char ** argv){
 					dist = 0;
 	                next_state = 0;
 	                step++;
-	                printf("\n\nCase 4");
+	                printf("\n\nCase 4: giro derecho");
 	                break;
 
 	            /*---------------------------Luz Detras Izquierda---------------------------*/
@@ -314,14 +314,14 @@ int main(int argc, char ** argv){
 	                angle = -angulo_usuario;
 					dist = 0;
 	                next_state = 6;
-	                printf("\n\nCase 5");
+	                printf("\n\nCase 5: giro izquierdo");
 	                break;
 
 		        case 6:				// Giro izquierdo
 	                angle = -angulo_usuario;
 					dist = 0;
 	                next_state = 0;
-	                printf("\n\nCase 6");
+	                printf("\n\nCase 6: giro izquierdo");
 	                break;
 
 	            /*---------------------------Luz Detras Derecha---------------------------*/
@@ -330,14 +330,14 @@ int main(int argc, char ** argv){
 	                angle = angulo_usuario;
 					dist = 0;
 	                next_state = 8;
-	                printf("\n\nCase 7");
+	                printf("\n\nCase 7: giro derecho");
 	                break;
 
 		        case 8:				// Giro derecho
 	                angle = angulo_usuario;
 					dist = 0;
 	                next_state = 0;
-	                printf("\n\nCase 8");
+	                printf("\n\nCase 8: giro derecho");
 	                break;
 
  			}
@@ -350,13 +350,15 @@ int main(int argc, char ** argv){
 			/*--------------------------Giro--------------------------*/	
 
 			float angulo = angle;
-			int anterior = enc[0];				//Variable para determinar si cambio orientacion de la llanta
-			int actual   = enc[0] + 100;		//Variable para determinar si cambio orientacion de la llanta
+			int anterior_izq = enc[0];				//Variable para determinar cambio orientacion de las llantas
+			int actual_izq   = enc[0] + 100;		
+			int anterior_der = enc[1];				
+			int actual_der   = enc[1] + 100;		
 
 			//-------------------Loop para seguir recibiendo datos-----------------------/	
 
 			printf("\n\n1-->Esperando motores.");
-			while(anterior != actual){
+			while(anterior_izq != actual_izq & anterior_der != actual_der){
 				act = false;
 				printf(".");
 				while(!act && ros::ok()){				
@@ -366,8 +368,10 @@ int main(int argc, char ** argv){
 					ros::spinOnce();								//Recibe llamadas de vuelta al subscriber
 					rate.sleep();									//Espera mientras el mensaje es emitido
 				}
-				anterior = actual;			//Actualiza valores de los encoders
-				actual = enc[0];			//para la siguiente comprobacion
+				anterior_izq = actual_izq;			//Actualiza valores de los encoders
+				actual_izq = enc[0];			//para la siguiente comprobacion
+				anterior_der = actual_der;			//Actualiza valores de los encoders
+				actual_der = enc[1];			//para la siguiente comprobacion
 			}
 
 			//-------------------Parámetros usados en el perfil trapezoidal de giro-----------------------*/	
@@ -487,23 +491,26 @@ int main(int argc, char ** argv){
 			float av = 10;
 			av 	= dist;
 			act = false;
-			actual = enc[0] + 100;
+			actual_izq   = enc[0] + 100;		
+			actual_der   = enc[1] + 100;		
 
-			//-------------------Loop para seguir recibiendo datos-------------------//
-			
+			//-------------------Loop para seguir recibiendo datos-----------------------/	
+
 			printf("\n\n2-->Esperando motores.");
-			while(anterior != actual){
+			while(anterior_izq != actual_izq & anterior_der != actual_der){
 				act = false;
 				printf(".");
 				while(!act && ros::ok()){				
 					printf(".");
 					//printf("\nEncoder derecho  : %.4f", enc[1]);
 					//printf("\nEncoder izquierdo: %.4f", enc[0]);
-					ros::spinOnce();
-					rate.sleep();
+					ros::spinOnce();								//Recibe llamadas de vuelta al subscriber
+					rate.sleep();									//Espera mientras el mensaje es emitido
 				}
-				anterior = actual;
-				actual = enc[0];
+				anterior_izq = actual_izq;			//Actualiza valores de los encoders
+				actual_izq = enc[0];			//para la siguiente comprobacion
+				anterior_der = actual_der;			//Actualiza valores de los encoders
+				actual_der = enc[1];			//para la siguiente comprobacion
 			}
 
 			//-------------------Parámetros usados en el perfil trapezoidal de avance positivo-------------------*/	
