@@ -82,6 +82,6 @@ if __name__ == '__main__':
         time.sleep(1)      
 
     except:
-        print "Hokuyo not found"
+        print "Hokuyo has not been found"
 
     hokuyo()

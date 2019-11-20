@@ -43,12 +43,15 @@ void callbackIzq(const std_msgs::Int64::ConstPtr& msg){
 #define minRange  -80								
 #define intervalRange  10 		//Grados para cada intervalo
 
-float umbral    =  0.2;			//Rango para determinar si se encuentra un obstaculo en determinada posicion					
+int posicion_obstaculo = 4;			//Indica la posicion del obstaculo
+float umbral;						//Rango para determinar si se encuentra un obstaculo en determinada posicion
+float umbral_usuario;				
 float promLeft  =	 0;
 float promRight =	 0;
 float promFront =	 0;
 float centralOut, derechaOut, izquierdaOut;
 float values[2][(maxRange - minRange) / intervalRange];	//Dos arreglos de 16 valores cada uno
+
 	
 bool hokuyoFlag = false;
 bool central_flag, centralDer_flag, centralIzq_flag, derecha_flag, izquierda_flag;		//Banderas para determinar zona de obstaculo
@@ -164,6 +167,21 @@ void callbackHokuyo(const sensor_msgs::LaserScan::ConstPtr &msg){
 	if(derechaOut < umbral)
 		derecha_flag = true;
 
+	/*---------------------------Posicion de obstaculo---------------------------*/	
+
+	if (central_flag)
+		posicion_obstaculo = 2;
+	else if (izquierda_flag | izquierda_flag & central_flag)
+		posicion_obstaculo = 1;
+	else if	(derecha_flag | derecha_flag & central_flag)
+		posicion_obstaculo = 3;
+	else if (derecha_flag & izquierda_flag | derecha_flag & izquierda_flag & central_flag)
+		posicion_obstaculo = 0;
+	else if (!central_flag & !derecha_flag & !izquierda_flag)
+		posicion_obstaculo = 5;
+	else 
+		posicion_obstaculo = 6;
+
 	/*---------------------------EndRangos---------------------------*/	
 
 	hokuyoFlag = true;
@@ -175,7 +193,7 @@ void data_hokuyo(){
 	//Imprimira "False" si dentro de esa region NO hay obstaculoTrue
 	//Imprimira "True " si dentro de esa region SI hay obstaculo
 
-	printf("\n\nUmbral:\t\t%.4f\t\t[cm]",umbral*100);
+	printf("\n\nUmbral:\t\t%.4f\t\t[cm]\t%.4f",umbral_usuario,umbral*100);
 	printf("\nIzquierda:\t%.4f\t\t[cm]",	izquierdaOut); 	printf(izquierda_flag 	? "True" : "False");
 	printf("\nCentral:\t%.4f\t\t[cm]",		centralOut);	printf(central_flag 	? "True" : "False");
 	printf("\nDerecha:\t%.4f\t\t[cm]",		derechaOut);	printf(derecha_flag 	? "True" : "False");
@@ -200,7 +218,7 @@ int main(int argc, char ** argv){
 																									//de mensajes y como maximo 1 mensaje en el buffer.
 	int disOffset	;
 	float dist, angle;
-	float distancia_usuario, angulo_usuario, umbral_usuario;
+	float distancia_usuario, angulo_usuario;
 	std_msgs::Float32MultiArray msg;		//Variable que almacena mensaje que vamos a enviar 
 	msg.data.resize(2);						//Tamaño de la variable msg
 
@@ -237,31 +255,35 @@ int main(int argc, char ** argv){
 			printf("\n\n--------------Step: %d de: %d--------------", step+1, total_steps);
 			switch(next_state){
 				case 0:
-					if (!izquierda_flag & !central_flag & !derecha_flag){			// Sin obstaculo enfrente, avanza
+					if (posicion_obstaculo == 5){			// Sin obstaculo enfrente, avanza
 						angle = 0;
 						dist = distancia_usuario;
                         next_state = 0;
-                        step = total_steps;
                         printf("\n\n----->Sin obstaculo \t\t");
                         data_hokuyo();
 	                }
 	                else{
-                        if 		(!izquierda_flag & !central_flag  &  derecha_flag){		// Obstaculo en la derecha
+                        if 		(posicion_obstaculo == 3){		// Obstaculo en la derecha
                             next_state = 1;
                             printf("\n\n----->Obstaculo en la derecha \t\t");                          
                   		    data_hokuyo();
                         }
-                        else if ( izquierda_flag & !central_flag  & !derecha_flag){		// Obstaculo en la izquierda
+                        else if (posicion_obstaculo == 1){		// Obstaculo en la izquierda
                             next_state = 3;
                             printf("\n\n----->Obstaculo en la izquierda \t\t");
                             data_hokuyo();
                         }
-                        else if (!izquierda_flag &  central_flag  & !derecha_flag){		// Obstaculo enfrente
+                        else if (posicion_obstaculo == 2){		// Obstaculo enfrente
                             next_state = 5;
                             printf("\n\n----->Obstaculo enfrente \t\t");
                             data_hokuyo();
                         }
-                        else printf("\n\n-----> Otro caso:\t");
+                        else if (posicion_obstaculo == 0){		// Obstaculo por ambos lados
+                            next_state = 5;
+                            printf("\n\n----->Obstaculo a la derecha e izquierda \t\t");
+                            data_hokuyo();
+                        }
+                        else printf("\n\n-----> Otro caso:\t%c", posicion_obstaculo);
                         	data_hokuyo();
 	                }
 					break;
@@ -355,8 +377,8 @@ int main(int argc, char ** argv){
 
 			/*-----------------Inserción de valores: angulo de giro y distancia-----------------*/
 
-			angle *= 1.35;						//Factor de corrección.
-			dist  *= 0.784;						//Factor de corrección.
+			angle *=-1.9;						//Factor de corrección.
+			dist  *= 0.9;						//encFactor de corrección.
 
 			/*--------------------------Giro--------------------------*/	
 

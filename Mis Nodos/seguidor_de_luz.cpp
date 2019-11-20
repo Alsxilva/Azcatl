@@ -593,7 +593,7 @@ int main(int argc, char ** argv){
 				//-----------------Primera parte del perfil trapezoidal-----------------*/	
 
 				printf("\n\n--->Retrocedere");
-				printf("\n\tDistancia = %f [cm]",distancia_usuario);
+				printf("\n\tDistancia = %f [cm] %f",distancia_usuario,av);
 
 				while(enc[0]>limite1 && ros::ok()){
 					//printf("%f %f %f\n",enc[0],limite1,msg.data[0]);
