@@ -193,10 +193,10 @@ void data_hokuyo(){
 	//Imprimira "False" si dentro de esa region NO hay obstaculoTrue
 	//Imprimira "True " si dentro de esa region SI hay obstaculo
 
-	printf("\n\nUmbral:\t\t%.4f\t\t[cm]\t%.4f",umbral_usuario,umbral*100);
-	printf("\nIzquierda:\t%.4f\t\t[cm]",	izquierdaOut); 	printf(izquierda_flag 	? "True" : "False");
-	printf("\nCentral:\t%.4f\t\t[cm]",		centralOut);	printf(central_flag 	? "True" : "False");
-	printf("\nDerecha:\t%.4f\t\t[cm]",		derechaOut);	printf(derecha_flag 	? "True" : "False");
+	printf("\n\nUmbral:\t\t%.4f\t  [cm]\t%.4f",umbral_usuario,umbral*100);
+	printf("\nIzquierda:\t%.4f\t  [cm]\t",	100*izquierdaOut); 	printf(izquierda_flag 	? "True" : "False");
+	printf("\nCentral:\t%.4f\t  [cm]\t",		100*centralOut);	printf(central_flag 	? "True" : "False");
+	printf("\nDerecha:\t%.4f\t  [cm]\t",		100*derechaOut);	printf(derecha_flag 	? "True" : "False");
 	//printf("\nCentral Izq:\t%.4f\t",	centralIzqOut); printf(centralIzq_flag 	? "False" : "True");
 	//printf("\nCentral Der:\t%.4f\t",	centralDerOut);	printf(centralDer_flag	? "False" : "True");
 }
@@ -236,8 +236,23 @@ int main(int argc, char ** argv){
 		printf("Angulo a girar por paso [grados]:");
 		scanf("%f",&angulo_usuario);
 
-		umbral = (umbral_usuario/100)/0.9;
+		/*int prueba = 1;
+		while(prueba==1){
+			hokuyoFlag = false;						//Bandera para detectar la conexion con el hokuyo
+			printf("\n\nEsperando a Hokuyo.");
+			
+			while(!hokuyoFlag && ros::ok()){
+				printf("..");					//Imprimira ".." mientras espera respuesta de Hokuyo
+				ros::spinOnce();
+				rate.sleep();
+			} 
+			data_hokuyo();
+		}
 
+		umbral = (umbral_usuario/100)/0.75;
+		*/
+		
+		umbral = umbral_usuario
 		step = 0;
 		int next_state = 0;				//Inicia maquina de estados
 
