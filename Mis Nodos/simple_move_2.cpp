@@ -5,7 +5,9 @@ Octubre 2019
 
 /*--------------------------------------------------------------*/
 
+#include <math.h>
 #include <ros/ros.h>
+#include <std_msgs/Int8.h>
 #include <std_msgs/Int64.h>
 #include <std_msgs/Float32.h>
 #include <sensor_msgs/LaserScan.h>
@@ -46,16 +48,24 @@ int main(int argc, char ** argv){
 	
 	/*------------------------------------Se instancian subscriptores y publicadores------------------------------------*/	
 							
-	ros::Subscriber encoizq 		= nh.subscribe("/encoIzq",1,callbackIzq);					//Regresa ROS subscriber y avisa a ROS la 'lectura'				 
-	ros::Subscriber encoder 		= nh.subscribe("/encoDer",1,callbackDer);					//de mensajes y como maximo 1 mensaje en el buffer.				
+	ros::Subscriber encoizq = nh.subscribe("/encoIzq",1,callbackIzq);					//Regresa ROS subscriber y avisa a ROS la 'lectura'				 
+	ros::Subscriber encoder = nh.subscribe("/encoDer",1,callbackDer);					//de mensajes y como maximo 1 mensaje en el buffer.				
 																									
 	ros::Publisher pubVelMotor 	= nh.advertise<std_msgs::Float32MultiArray>("/motor_speeds",1);		//Regresa ROS publisher y avisa a ROS la 'publicacion'  				
-																									//de mensajes y como maximo 1 mensaje en el buffer.
+	ros::Publisher pubKpPid = nh.advertise<std_msgs::Int8>("/kpPID",1);				//de mensajes y como maximo 1 mensaje en el buffer.
+	//ros::Publisher pubKiPid = nh.advertise<std_msgs::Int8>("/kiPID",1);
+	//ros::Publisher pubKdPid = nh.advertise<std_msgs::Int8>("/kdPID",1);
+
 	int disOffset;
-	float dist, angle;
-	float distancia_usuario, angulo_usuario;
+	float dist, angle, distancia_usuario, angulo_usuario;
+	int kp, ki, kd;
 	std_msgs::Float32MultiArray msg;		//Variable que almacena mensaje que vamos a enviar 
 	msg.data.resize(2);						//Tamaño de la variable msg
+
+	std_msgs::Int8 kpROS;
+	std_msgs::Int8 kiROS;
+	std_msgs::Int8 kdROS;
+
 
 	while(ros::ok()){						//Ejecuta ROS mientras no exista alguna interrupción.
 		
@@ -64,19 +74,46 @@ int main(int argc, char ** argv){
 		int step = 0;			
 		printf("\n\nIntroduzca:\n");
 		printf("El numero de pasos deseado: ");
-		scanf("%d",&total_steps);
+		scanf("%dd",&total_steps);
 		printf("Angulo a girar por paso [grados]: ");
 		scanf("%f",&angulo_usuario);
 		printf("Distancia a recorrer por paso [cm]: ");
 		scanf("%f",&distancia_usuario);
 
+		/*-----------Comunicacion con Arduino para publicacion de K's del PID-----------*/
+
+		printf("Los siguientes datos en formato de entero:\n");
+		printf("Constante Proporcional (Kp): ");
+		scanf("%d",&kp);
+		printf("Constante Integral (Ki): ");
+		scanf("%d",&ki);
+		printf("Constante Derivativa (Kd): ");
+		scanf("%d",&kd);
+
+		kpROS.data = kp;
+		kiROS.data = ki;	
+		kdROS.data = kd;	
+		pubKpPid.publish(kpROS);			//Emite mensaje con las constantes para el PID
+		//pubKiPid.publish(kdROS);
+		//pubKdPid.publish(kiROS);
+		//ros::spinOnce();
+		rate.sleep();
+
+		printf("\nEsperando a PID de Arduino.");
+			while(!act && ros::ok()){
+				printf("..");				//Imprimira ".." mientras espera respuesta de Arduino(PID)
+				ros::spinOnce();
+				rate.sleep();
+			}
+
+		/*----------------------Inicia maquina de estados----------------------*/
+
 		step = 0;
-		int next_state = 0;				//Inicia maquina de estados
+		int next_state = 0;				
 
 		while (step < total_steps ){
 
 			printf("\n\nEsperando a Arduino.");
-			
 			while(!act && ros::ok()){
 				printf("..");						//Imprimira ".." mientras espera respuesta de Arduino(Fotoresistencias)
 				ros::spinOnce();
@@ -90,8 +127,7 @@ int main(int argc, char ** argv){
             step ++;
 
 			/*-----------------Inserción de valores: angulo de giro y distancia-----------------*/
-
-			angle *= 1.35;						//Factor de corrección.
+	
 			dist  *= 0.784;						//Factor de corrección.
 
 			/*--------------------------Giro--------------------------*/	
@@ -238,7 +274,7 @@ int main(int argc, char ** argv){
 
 			//-------------------Loop para seguir recibiendo datos-------------------//
 			
-			printf("\n\n2-->Esperando motores.");
+			printf("\n\n2-->Esperando motores/.");
 			while(anterior != actual){
 				act = false;
 				printf(".");
@@ -291,6 +327,7 @@ int main(int argc, char ** argv){
 					//printf("\n**********%f-------------\n",error);
 					msg.data[0] = k + (3.0 * (vm - k) * (fabs(enc[0] - posIzq0) / (delta)));		//Ambos secciones de llantas, izquierda
 					msg.data[1] = msg.data[0];														//y derecha, giraran hacia adelante
+					printf("\n\t1.\n\tMizq = %f [cm]\n\tMder = %f [cm]",msg.data[0],msg.data[1]);
 					pubVelMotor.publish(msg);
 					ros::spinOnce();
 					rate.sleep();
@@ -303,6 +340,7 @@ int main(int argc, char ** argv){
 					//printf("\n--->Avance 2");
 					msg.data[0] = vm;
 					msg.data[1] = msg.data[0];
+					printf("\n\t2.\n\tMizq = %f [cm]\n\tMder = %f [cm]",msg.data[0],msg.data[1]);
 					pubVelMotor.publish(msg);
 					ros::spinOnce();
 					rate.sleep();
@@ -315,6 +353,7 @@ int main(int argc, char ** argv){
 					//printf("\n--->Avance 3");
 					msg.data[0] = vm - (3.0 * (vm - k) * ((fabs(enc[0] - posIzq0) / (delta)) - (2.0 / 3.0)));
 					msg.data[1] = msg.data[0];
+					printf("\n\t3.\n\tMizq = %f [cm]\n\tMder = %f [cm]",msg.data[0],msg.data[1]);
 					pubVelMotor.publish(msg);
 					ros::spinOnce();
 					rate.sleep();
@@ -340,7 +379,8 @@ int main(int argc, char ** argv){
 					//printf("\n ********%f*****+ \n",(enc[0]-posIzq0));
 					//printf("\n\n--->Reversa 1");
 					msg.data[0] =(-k - (3.0 * (vm - k) * (-fabs(enc[0] - posIzq0) / (delta))));		//Ambas secciones de llantas, izquierda
-					msg.data[1] = msg.data[0];														//y derecha, giran hacia atras
+					msg.data[1] = msg.data[0];	
+					printf("\n\t1.\n\tMizq = %f [cm]\n\tMder = %f [cm]",msg.data[0],msg.data[1]);
 					pubVelMotor.publish(msg);
 					ros::spinOnce();
 					rate.sleep();
@@ -349,10 +389,11 @@ int main(int argc, char ** argv){
 				//-----------------Segunda parte del perfil trapezoidal-----------------*/	
 
 				while(enc[0] > limite2 && ros::ok()){
-						//printf("%f %f %f\n",enc[0],limite2,-vm);
+					//printf("%f %f %f\n",enc[0],limite2,-vm);
 					//printf("\n--->Reversa 2");
 					msg.data[0] = -vm;
 					msg.data[1] = msg.data[0];
+					printf("\n\t2.\n\tMizq = %f [cm]\n\tMder = %f [cm]",msg.data[0],msg.data[1]);
 					pubVelMotor.publish(msg);
 					ros::spinOnce();
 					rate.sleep();
@@ -365,6 +406,7 @@ int main(int argc, char ** argv){
 					//printf("\n--->Reversa 3");
 					msg.data[0] = -(((vm - k) / (delta * 0.33333 * -1)) * (enc[0] - posIzqFin)) - k;
 					msg.data[1] = msg.data[0];
+					printf("\n\t3.\n\tMizq = %f [cm]\n\tMder = %f [cm]",msg.data[0],msg.data[1]);
 					pubVelMotor.publish(msg);
 					ros::spinOnce();
 					rate.sleep();

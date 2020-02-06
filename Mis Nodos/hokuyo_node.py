@@ -52,7 +52,7 @@ def hokuyo_data():
     msg_laser = LaserScan()
 
     #---------Caracteristicas del laser "Hokuyo"---------
-     
+    
     angular_resolution  = 0.352
     msg_laser.range_min = 0.0199999
     msg_laser.range_max = 5.5999999 

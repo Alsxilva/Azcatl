@@ -193,10 +193,10 @@ void data_hokuyo(){
 	//Imprimira "False" si dentro de esa region NO hay obstaculoTrue
 	//Imprimira "True " si dentro de esa region SI hay obstaculo
 
-	printf("\n\nUmbral:\t\t%.4f\t  [cm]\t%.4f",umbral_usuario,umbral*100);
-	printf("\nIzquierda:\t%.4f\t  [cm]\t",	100*izquierdaOut); 	printf(izquierda_flag 	? "True" : "False");
-	printf("\nCentral:\t%.4f\t  [cm]\t",		100*centralOut);	printf(central_flag 	? "True" : "False");
-	printf("\nDerecha:\t%.4f\t  [cm]\t",		100*derechaOut);	printf(derecha_flag 	? "True" : "False");
+	printf("\n\nUmbral:\t\t%.3f\t  [cm]\t%.4f",umbral_usuario,umbral);
+	printf("\nIzquierda:\t%.4f\t  [m]\t",	izquierdaOut); 	printf(izquierda_flag 	? "True" : "False");
+	printf("\nCentral:\t%.4f\t  [m]\t",		centralOut);	printf(central_flag 	? "True" : "False");
+	printf("\nDerecha:\t%.4f\t  [m]\t",		derechaOut);	printf(derecha_flag 	? "True" : "False");
 	//printf("\nCentral Izq:\t%.4f\t",	centralIzqOut); printf(centralIzq_flag 	? "False" : "True");
 	//printf("\nCentral Der:\t%.4f\t",	centralDerOut);	printf(centralDer_flag	? "False" : "True");
 }
@@ -252,7 +252,7 @@ int main(int argc, char ** argv){
 		umbral = (umbral_usuario/100)/0.75;
 		*/
 		
-		umbral = umbral_usuario
+		umbral = umbral_usuario/100;
 		step = 0;
 		int next_state = 0;				//Inicia maquina de estados
 
@@ -273,119 +273,126 @@ int main(int argc, char ** argv){
 					if (posicion_obstaculo == 5){			// Sin obstaculo enfrente, avanza
 						angle = 0;
 						dist = distancia_usuario;
-                        next_state = 0;
                         printf("\n\n----->Sin obstaculo \t\t");
                         data_hokuyo();
+						step++;
+                        next_state = 0;
+                        break;
 	                }
 	                else{
                         if 		(posicion_obstaculo == 3){		// Obstaculo en la derecha
-                            next_state = 1;
                             printf("\n\n----->Obstaculo en la derecha \t\t");                          
                   		    data_hokuyo();
+                            next_state = 1;
+                            break;
                         }
                         else if (posicion_obstaculo == 1){		// Obstaculo en la izquierda
-                            next_state = 3;
                             printf("\n\n----->Obstaculo en la izquierda \t\t");
                             data_hokuyo();
+                            next_state = 3;
+                            break;
                         }
                         else if (posicion_obstaculo == 2){		// Obstaculo enfrente
-                            next_state = 5;
                             printf("\n\n----->Obstaculo enfrente \t\t");
                             data_hokuyo();
+                            next_state = 5;
+                            break;
                         }
                         else if (posicion_obstaculo == 0){		// Obstaculo por ambos lados
-                            next_state = 5;
                             printf("\n\n----->Obstaculo a la derecha e izquierda \t\t");
                             data_hokuyo();
+                            next_state = 5;
+                            break;
                         }
                         else printf("\n\n-----> Otro caso:\t%c", posicion_obstaculo);
                         	data_hokuyo();
+                        	break;
 	                }
 					break;
 
 				/*---------------------------Obstaculo en la derecha---------------------------*/
 					
 				case 1: 			// Reversa
+	                printf("\n\nCase 1");
 	                angle = 0;
 					dist = -distancia_usuario;
 	                next_state = 2;
-	                printf("\n\nCase 1");
                		break;
 
 		        case 2: 			// Giro izquierdo
-	                angle = -angulo_usuario;
+	                printf("\n\nCase 2");
+	                angle = angulo_usuario;
 					dist = 0;
 	                next_state = 0;
 	                step++;
-	                printf("\n\nCase 2");
 	                break;
 
 	            /*---------------------------Obstaculo en la izquierda---------------------------*/
 
 		        case 3: 			// Reversa
+	                printf("\n\nCase 3");
 	                angle = 0;
 					dist = -distancia_usuario;
 	                next_state = 4;
-	                printf("\n\nCase 3");
 	                break;
 
 		        case 4: 			// Giro derecho
-	                angle = angulo_usuario;
+	                printf("\n\nCase 4");
+	                angle = -angulo_usuario;
 					dist = 0;
 	                next_state = 0;
 	                step++;
-	                printf("\n\nCase 4");
 	                break;
 
 	            /*---------------------------Obstaculo enfrente---------------------------*/
 
 		        case 5: 			// Reversa
+	                printf("\n\nCase 5");
 	                angle = 0;
 					dist = -distancia_usuario;
 	                next_state = 6;
-	                printf("\n\nCase 5");
 	                break;
 
 		        case 6: 			// Giro izquierdo
-	                angle = -angulo_usuario;
+	                printf("\n\nCase 6");
+	                angle = angulo_usuario;
 					dist = 0;
 	                next_state = 7;
-	                printf("\n\nCase 6");
 	                break;
 
 		        case 7:				// Giro izquierdo
-	                angle = -angulo_usuario;
+	                angle = angulo_usuario;
 					dist = 0;
 	                next_state = 8;
 	                printf("\n\nCase 7");
 	                break;
 
 		        case 8: 			// Avanza
+	                printf("\n\nCase 8");
 	                angle = 0;
 					dist = distancia_usuario;
 	                next_state = 9;
-	                printf("\n\nCase 8");
 	                break;
 
 		        case 9: 			// Avanza
+	                printf("\n\nCase 9");
 	                angle = 0;
 					dist = distancia_usuario;
 	                next_state = 10;
-	                printf("\n\nCase 9");
 	                break;
 
 		        case 10: 			// Giro derecho
-	                angle = angulo_usuario;
+	                printf("\n\nCase 10");
+	                angle = -angulo_usuario;
 					dist = 0;
 	                next_state = 11;
-	                printf("\n\nCase 10");
 	                break;
 
 		        case 11: 			// Giro derecho
-	                angle = angulo_usuario	;
+	                printf("\n\nCase 11");
+	                angle = -angulo_usuario	;
 					dist = 0;
 	                next_state = 0;
-	                printf("\n\nCase 11");
 	                step++;
 	                break;
  			}

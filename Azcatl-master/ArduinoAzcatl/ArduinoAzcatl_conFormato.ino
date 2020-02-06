@@ -94,26 +94,6 @@ unsigned long timeold = 0;              //Tiempo
 float wheel_diameter  = 123.40/1000.0;  //Diámetro de la rueda pequeña[mm]  //          [m]
 unsigned int pulsesperturn = 3200;      //Número de pulsos por vuelta del motor, por canal = 3267.  //1600 Según yo recuerdo eran 3200 con el RISING
 
-//Definición de variables para el PID derecho
-float P_D = 0;          //Acción proporcional
-float I_D = 0;          //Acción integral
-float D_D = 0;          //Acción derivativa
-float Kp_D = 35.0;      //Constante proporcional = 0.4
-float Ki_D = 0.1;       //Constante integral     = 0.025
-float Kd_D = 0.1;       //Constante derivativa   = 2.9
-float error_D = 0;
-float errorAnterior_D = 0; 
-
-//Definición de variables para el PID izquierdo
-float P_I = 0;          //Acción Proporcional
-float I_I = 0;          //Acción integral
-float D_I = 0;          //Acción /DErivativa
-float Kp_I = 40.0;      //0.4 //Constante proporcional
-float Ki_I = 0.1;       //0.025 //Constante integral
-float Kd_I = 0.1;       //2.9//Constante derivativa
-float error_I = 0;
-float errorAnterior_I = 0; 
-
 //  kp    arranque  direccion
 //  40 ->  bien     bien
 
@@ -129,12 +109,6 @@ float r_tizq = 0; //[m/s]
 volatile float y_t_D = 0;
 volatile float y_t_I = 0;
 
-//Tiempo del ciclo del PID
-float cycleTime = 200; //ms
-
-///Tiempo del ciclo del PID en segundo
-//¡NO MODIFICAR, SE CALCULA SOLA!
-float cycleTimeSeconds = 0; //s  //Variable auxiliar del tiempo del ciclo del PID
 
 /*-----------------------------Funciones-----------------------------*/
 
@@ -278,8 +252,14 @@ void calculoVelocidad()
       if(abs(ContM6)>tol*minDer)
         ContM6 = (ContM6<0)?-minIzq:minIzq;
       
-      encoDerAvg = (ContM2+ContM4+ContM6)/3;
-      encoIzqAvg = (ContM1+ContM3+ContM5)/3;
+      //  Se omiten los motores 3 y 4 debido a que la construccion del robot no permite que los mismos
+      //  esten a la misma altura, haciendo que los motores de las esquinas hagan mayor contacto.
+      //  Solo tomaremos en cuenta los motores de las esquinas.d
+      //encoDerAvg = (ContM2+ContM4+ContM6)/3;
+      //encoIzqAvg = (ContM1+ContM3+ContM5)/3;
+
+      encoDerAvg = (ContM2+ContM6)/2;
+      encoIzqAvg = (ContM1+ContM5)/2;
 
       //Periodo maximo de muestreo para la velocidad
       //Uptade every one second, this will be equal to reading frecuency (Hz). // Se actualiza cada segundo
@@ -310,7 +290,34 @@ void calculoVelocidad()
   }
 }
 
-/*-----------------------------------Control PID-----------------------------------*/
+//Definición de variables para el PID derecho
+float P_D = 0;          //Acción proporcional
+float I_D = 0;          //Acción integral
+float D_D = 0;          //Acción derivativa
+float Kp_D = 35.0;      //Constante proporcional = 0.4
+float Ki_D = 0.1;       //Constante integral     = 0.025
+float Kd_D = 0.1;       //Constante derivativa   = 2.9
+float error_D = 0;
+float errorAnterior_D = 0; 
+
+//Definición de variables para el PID izquierdo
+float P_I = 0;          //Acción Proporcional
+float I_I = 0;          //Acción Integral
+float D_I = 0;          //Acción Derivativa
+float Kp_I = 40.0;      //Constante proporcional = 0.4
+float Ki_I = 0.1;       //Constante integral     = 0.025
+float Kd_I = 0.1;       //Constante derivativa   = 2.9
+float error_I = 0;
+float errorAnterior_I = 0; 
+
+//Tiempo del ciclo del PID
+float cycleTime = 200; //ms
+
+///Tiempo del ciclo del PID en segundo
+//¡NO MODIFICAR, SE CALCULA SOLA!
+float cycleTimeSeconds = 0; //s  //Variable auxiliar del tiempo del ciclo del PID
+/*-----------------------------------Control PID---------------------------------
+--*/
 float I_D_suma;
 float ev, Rplus;
 float ut_D_anterior = 0;
@@ -327,13 +334,13 @@ void pid(){
   Rplus = krp*ev;
 
   //***************************PID DERECHO***************************
-  y_t_D = velocidad_der;  //real  [m/s]
-  r_t_D =velocidadder;    //deseada  [m/s]
-  error_D = r_t_D - y_t_D - Rplus;//Cálculo del error
-  P_D = Kp_D * error_D;//Acción proporcional
+  y_t_D = velocidad_der;            //Real  [m/s]
+  r_t_D =velocidadder;              //Deseada  [m/s]
+  error_D = r_t_D - y_t_D - Rplus;  //Cálculo del error
+  P_D = Kp_D * error_D;             //Acción proporcional
   D_D = Kd_D * (error_D - errorAnterior_D)/(pid_tiempo-pid_tiempo_anterior);
   I_D += Ki_D * 0.5 * (error_D + errorAnterior_D) * (pid_tiempo-pid_tiempo_anterior); 
-  ut_D = ut_D_anterior + P_D + D_D + I_D;// + I_D + D_D;//suma de las tres acciones para obtener la señal de control
+  ut_D = ut_D_anterior + P_D + D_D + I_D;   //Suma de las tres acciones para obtener la señal de control
   if(ut_D > 255)  ut_D = 255;
   else if(ut_D < 0) ut_D = 0;
   
