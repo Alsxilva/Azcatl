@@ -11,7 +11,7 @@ Octubre 2019
 #include <std_msgs/Int64.h>
 #include <std_msgs/Float32.h>
 #include <sensor_msgs/LaserScan.h>
-#include <std_msgs/Float32MultiArray.h>	
+//#include <std_msgs/Float32MultiArray.h>	
 	
 #define k 					0.1				//Constante de desfase 
 #define vm					0.50			//Velocidad maxima [m/s]
@@ -42,7 +42,7 @@ void callbackIzq(const std_msgs::Int64::ConstPtr& msg){
 /*------------------------------------Inicio del Main------------------------------------*/	
 
 int main(int argc, char ** argv){
-	ros::init(argc, argv, "seguidor_de_luz");	//Inicio de ROS. Necesarios Argc y Argv. Tercer argumento: nombre del nodo.
+	ros::init(argc, argv, "simple_move_2");	//Inicio de ROS. Necesarios Argc y Argv. Tercer argumento: nombre del nodo.
 	ros::NodeHandle nh;							//Manipulador de nodos: nodo publico 
 	ros::Rate rate(20);							//Tasa-cantidad de frecuencia 
 	
@@ -51,7 +51,10 @@ int main(int argc, char ** argv){
 	ros::Subscriber encoizq = nh.subscribe("/encoIzq",1,callbackIzq);					//Regresa ROS subscriber y avisa a ROS la 'lectura'				 
 	ros::Subscriber encoder = nh.subscribe("/encoDer",1,callbackDer);					//de mensajes y como maximo 1 mensaje en el buffer.				
 																									
-	ros::Publisher pubVelMotor 	= nh.advertise<std_msgs::Float32MultiArray>("/motor_speeds",1);		//Regresa ROS publisher y avisa a ROS la 'publicacion'  				
+	//ros::Publisher pubVelMotor 	= nh.advertise<std_msgs::Float32MultiArray>("/motor_speeds",1);		//Regresa ROS publisher y avisa a ROS la 'publicacion'  				
+	ros::Publisher pubVelMotorDer 	= nh.advertise<std_msgs::Float32>("/motorR_speed",1);
+	ros::Publisher pubVelMotorIzq 	= nh.advertise<std_msgs::Float32>("/motorL_speed",1);
+	
 	ros::Publisher pubKpPid = nh.advertise<std_msgs::Int8>("/kpPID",1);				//de mensajes y como maximo 1 mensaje en el buffer.
 	//ros::Publisher pubKiPid = nh.advertise<std_msgs::Int8>("/kiPID",1);
 	//ros::Publisher pubKdPid = nh.advertise<std_msgs::Int8>("/kdPID",1);
@@ -59,8 +62,9 @@ int main(int argc, char ** argv){
 	int disOffset;
 	float dist, angle, distancia_usuario, angulo_usuario;
 	int kp, ki, kd;
-	std_msgs::Float32MultiArray msg;		//Variable que almacena mensaje que vamos a enviar 
-	msg.data.resize(2);						//Tamaño de la variable msg
+
+	std_msgs::Float32 msgR;		//Variable que almacena mensaje que vamos a enviar 
+	std_msgs::Float32 msgL;
 
 	std_msgs::Int8 kpROS;
 	std_msgs::Int8 kiROS;
@@ -93,11 +97,11 @@ int main(int argc, char ** argv){
 		kpROS.data = kp;
 		kiROS.data = ki;	
 		kdROS.data = kd;	
-		pubKpPid.publish(kpROS);			//Emite mensaje con las constantes para el PID
+		//pubKpPid.publish(kpROS);			//Emite mensaje con las constantes para el PID
 		//pubKiPid.publish(kdROS);
 		//pubKdPid.publish(kiROS);
 		//ros::spinOnce();
-		rate.sleep();
+		//rate.sleep();
 
 		printf("\nEsperando a PID de Arduino.");
 			while(!act && ros::ok()){
@@ -178,9 +182,17 @@ int main(int argc, char ** argv){
 				while(enc[0] < limite1 && ros::ok()){
 					//printf("%f %f \n",enc[0],limite1);
 					//printf("\n\n--->Giro Derecha 1");
-					msg.data[0] = k + (3.0 * (vm - k) * (fabs(enc[0] - posIzq0)/(delta)));		//Las llantas del lado izquierdo giran hacia adelante
-				    msg.data[1] = -msg.data[0];													//mientras que las del lado derecho hacia atras.
-		       		pubVelMotor.publish(msg);		//Emite mensaje con la velocidad de los motores
+					
+					//msgL.data = k + (3.0 * (vm - k) * (fabs(enc[0] - posIzq0)/(delta)));		//Las llantas del lado izquierdo giran hacia adelante
+				    //msgR.data = -msgL.data;													//mientras que las del lado derecho hacia atras.
+		       		//pubVelMotorIzq.publish(msgL);									
+					pubVelMotorDer.publish(msgR);														//Emite mensaje con la velocidad de los motores
+					
+					msgL.data = k + (3.0 * (vm - k) * (fabs(enc[0] - posIzq0)/(delta)));
+					msgR.data = -msgL.data;											
+
+					pubVelMotorIzq.publish(msgL);									
+					pubVelMotorDer.publish(msgR);												
 					ros::spinOnce();
 					rate.sleep();		
 				}
@@ -189,9 +201,10 @@ int main(int argc, char ** argv){
 
 				while(enc[0] < limite2 && ros::ok()){
 					//printf("\n--->Giro Derecha 2");
-					msg.data[0] = vm;				//Alcanza velocidad máxima
-					msg.data[1] = -vm;	
-		       		pubVelMotor.publish(msg);
+					msgL.data = vm;				//Alcanza velocidad máxima
+					msgR.data = -vm;	
+		       		pubVelMotorIzq.publish(msgL);									
+					pubVelMotorDer.publish(msgR);
 					ros::spinOnce();
 					rate.sleep();		
 				}
@@ -201,9 +214,10 @@ int main(int argc, char ** argv){
 				while(enc[0] < posIzqFin && ros::ok()){
 					//printf("\n--->Giro Derecha 3");
 					//printf("%f %f \n",enc[0],posIzqFin);
-					msg.data[0] = vm - (3.0 * (vm - k) * ((fabs(enc[0] - posIzq0) / (delta)) - (2.0 / 3.0)));
-					msg.data[1] = -msg.data[0];
-		       		pubVelMotor.publish(msg);
+					msgL.data = vm - (3.0 * (vm - k) * ((fabs(enc[0] - posIzq0) / (delta)) - (2.0 / 3.0)));
+					msgR.data = -msgL.data;
+		       		pubVelMotorIzq.publish(msgL);									
+					pubVelMotorDer.publish(msgR);
 					ros::spinOnce();
 					rate.sleep();		
 				}
@@ -221,9 +235,10 @@ int main(int argc, char ** argv){
 				
 				while(enc[0] > limite1 && ros::ok()){
 					//printf("\n\n--->Giro Izquierda 1");
-					msg.data[0] = (-k - (3.0 * (vm - k) * (-fabs(enc[0] - posIzq0)/(delta))));		//Las llantas del lado derecho giran hacia adelante
-					msg.data[1] = - msg.data[0];													//mientras que las del lado izquierdo hacia atras.
-					pubVelMotor.publish(msg);
+					msgL.data = (-k - (3.0 * (vm - k) * (-fabs(enc[0] - posIzq0)/(delta))));		//Las llantas del lado derecho giran hacia adelante
+					msgR.data = - msgL.data;													//mientras que las del lado izquierdo hacia atras.
+					pubVelMotorIzq.publish(msgL);									
+					pubVelMotorDer.publish(msgR);
 					ros::spinOnce();
 					rate.sleep();
 				}
@@ -232,9 +247,10 @@ int main(int argc, char ** argv){
 
 				while(enc[0] > limite2 && ros::ok()){
 					//printf("\n--->Giro Izquierda 2");
-					msg.data[0] = -vm;
-					msg.data[1] = vm;						//Alcanza velocidad máxima
-					pubVelMotor.publish(msg);
+					msgL.data = -vm;
+					msgR.data = vm;						//Alcanza velocidad máxima
+					pubVelMotorIzq.publish(msgL);									
+					pubVelMotorDer.publish(msgR);
 					ros::spinOnce();
 					rate.sleep();
 				}
@@ -243,9 +259,10 @@ int main(int argc, char ** argv){
 
 				while(enc[0] > posIzqFin && ros::ok()){
 					//printf("\n--->Giro Izquierda 3");
-					msg.data[0] = -(((vm - k) / (delta * 0.33333 *-1)) * (enc[0] - posIzqFin)) - k;
-					msg.data[1] = -msg.data[0];
-					pubVelMotor.publish(msg);
+					msgL.data = -(((vm - k) / (delta * 0.33333 *-1)) * (enc[0] - posIzqFin)) - k;
+					msgR.data = -msgL.data;
+					pubVelMotorIzq.publish(msgL);									
+					pubVelMotorDer.publish(msgR);
 					ros::spinOnce();
 					rate.sleep();
 				}
@@ -255,9 +272,10 @@ int main(int argc, char ** argv){
 			
 			/*----------------------------Reset de encoders----------------------------*/	
 			for(int i = 0; i<10 ; i++){
-				msg.data[0] = 0.0;
-				msg.data[1] = 0.0;
-				pubVelMotor.publish(msg);
+				msgL.data = 0.0;
+				msgR.data = 0.0;
+				pubVelMotorIzq.publish(msgL);									
+				pubVelMotorDer.publish(msgR);
 				ros::spinOnce();
 				rate.sleep();
 			}	
@@ -309,9 +327,10 @@ int main(int argc, char ** argv){
 
 				//printf("Comenzando movimiento hacia adelante...");
 				//printf("Delta: %.4f \n",delta);
-				msg.data[0] = k;					//Desfase de inicio del perfil trapezoidal
-				msg.data[1] = k;
-				pubVelMotor.publish(msg);
+				msgL.data = k;					//Desfase de inicio del perfil trapezoidal
+				msgR.data = k;
+				pubVelMotorIzq.publish(msgL);									
+				pubVelMotorDer.publish(msgR);
 				ros::spinOnce();
 				rate.sleep();
 
@@ -321,14 +340,15 @@ int main(int argc, char ** argv){
 
 
 				while(enc[0] < limite1  && ros::ok()){
-					//printf("%f %f %f \n",enc[0],limite1,msg.data[1]);
+					//printf("%f %f %f \n",enc[0],limite1,msgR.data);
 					//printf("\n\n--->Avance 1");
 					float error = fabs(enc[0]- posIzq0); 
 					//printf("\n**********%f-------------\n",error);
-					msg.data[0] = k + (3.0 * (vm - k) * (fabs(enc[0] - posIzq0) / (delta)));		//Ambos secciones de llantas, izquierda
-					msg.data[1] = msg.data[0];														//y derecha, giraran hacia adelante
-					printf("\n\t1.\n\tMizq = %f [cm]\n\tMder = %f [cm]",msg.data[0],msg.data[1]);
-					pubVelMotor.publish(msg);
+					msgL.data = k + (3.0 * (vm - k) * (fabs(enc[0] - posIzq0) / (delta)));		//Ambos secciones de llantas, izquierda
+					msgR.data = msgL.data;														//y derecha, giraran hacia adelante
+					printf("\n\t1.\n\tMizq = %f [cm]\n\tMder = %f [cm]",msgL.data,msgR.data);
+					pubVelMotorIzq.publish(msgL);									
+					pubVelMotorDer.publish(msgR);
 					ros::spinOnce();
 					rate.sleep();
 				}
@@ -338,10 +358,11 @@ int main(int argc, char ** argv){
 				while(enc[0] < limite2 && ros::ok()){
 					//printf("%f %f %f\n",enc[0],limite2,vm);
 					//printf("\n--->Avance 2");
-					msg.data[0] = vm;
-					msg.data[1] = msg.data[0];
-					printf("\n\t2.\n\tMizq = %f [cm]\n\tMder = %f [cm]",msg.data[0],msg.data[1]);
-					pubVelMotor.publish(msg);
+					msgL.data = vm;
+					msgR.data = msgL.data;
+					printf("\n\t2.\n\tMizq = %f [cm]\n\tMder = %f [cm]",msgL.data,msgR.data);
+					pubVelMotorIzq.publish(msgL);									
+					pubVelMotorDer.publish(msgR);
 					ros::spinOnce();
 					rate.sleep();
 				}
@@ -349,12 +370,13 @@ int main(int argc, char ** argv){
 				//-----------------Tercera parte del perfil trapezoidal-----------------*/	
 
 				while(enc[0] < posIzqFin && ros::ok()){
-					//printf("%f %f %f\n",enc[0],posIzqFin,msg.data[1]);
+					//printf("%f %f %f\n",enc[0],posIzqFin,msgR.data);
 					//printf("\n--->Avance 3");
-					msg.data[0] = vm - (3.0 * (vm - k) * ((fabs(enc[0] - posIzq0) / (delta)) - (2.0 / 3.0)));
-					msg.data[1] = msg.data[0];
-					printf("\n\t3.\n\tMizq = %f [cm]\n\tMder = %f [cm]",msg.data[0],msg.data[1]);
-					pubVelMotor.publish(msg);
+					msgL.data = vm - (3.0 * (vm - k) * ((fabs(enc[0] - posIzq0) / (delta)) - (2.0 / 3.0)));
+					msgR.data = msgL.data;
+					printf("\n\t3.\n\tMizq = %f [cm]\n\tMder = %f [cm]",msgL.data,msgR.data);
+					pubVelMotorIzq.publish(msgL);									
+					pubVelMotorDer.publish(msgR);
 					ros::spinOnce();
 					rate.sleep();
 				}
@@ -375,13 +397,14 @@ int main(int argc, char ** argv){
 				printf("\n\tDistancia = %f [cm]",distancia_usuario);
 
 				while(enc[0]>limite1 && ros::ok()){
-					//printf("%f %f %f\n",enc[0],limite1,msg.data[0]);
+					//printf("%f %f %f\n",enc[0],limite1,msgL.data);
 					//printf("\n ********%f*****+ \n",(enc[0]-posIzq0));
 					//printf("\n\n--->Reversa 1");
-					msg.data[0] =(-k - (3.0 * (vm - k) * (-fabs(enc[0] - posIzq0) / (delta))));		//Ambas secciones de llantas, izquierda
-					msg.data[1] = msg.data[0];	
-					printf("\n\t1.\n\tMizq = %f [cm]\n\tMder = %f [cm]",msg.data[0],msg.data[1]);
-					pubVelMotor.publish(msg);
+					msgL.data =(-k - (3.0 * (vm - k) * (-fabs(enc[0] - posIzq0) / (delta))));		//Ambas secciones de llantas, izquierda
+					msgR.data = msgL.data;	
+					printf("\n\t1.\n\tMizq = %f [cm]\n\tMder = %f [cm]",msgL.data,msgR.data);
+					pubVelMotorIzq.publish(msgL);									
+					pubVelMotorDer.publish(msgR);
 					ros::spinOnce();
 					rate.sleep();
 				}
@@ -391,10 +414,11 @@ int main(int argc, char ** argv){
 				while(enc[0] > limite2 && ros::ok()){
 					//printf("%f %f %f\n",enc[0],limite2,-vm);
 					//printf("\n--->Reversa 2");
-					msg.data[0] = -vm;
-					msg.data[1] = msg.data[0];
-					printf("\n\t2.\n\tMizq = %f [cm]\n\tMder = %f [cm]",msg.data[0],msg.data[1]);
-					pubVelMotor.publish(msg);
+					msgL.data = -vm;
+					msgR.data = msgL.data;
+					printf("\n\t2.\n\tMizq = %f [cm]\n\tMder = %f [cm]",msgL.data,msgR.data);
+					pubVelMotorIzq.publish(msgL);									
+					pubVelMotorDer.publish(msgR);
 					ros::spinOnce();
 					rate.sleep();
 				}
@@ -402,12 +426,13 @@ int main(int argc, char ** argv){
 				//-----------------Tercera parte del perfil trapezoidal-----------------*/	
 
 				while(enc[0] > posIzqFin && ros::ok()){
-					//printf("%f %f %f\n",enc[0],posIzqFin,msg.data[1]);
+					//printf("%f %f %f\n",enc[0],posIzqFin,msgR.data);
 					//printf("\n--->Reversa 3");
-					msg.data[0] = -(((vm - k) / (delta * 0.33333 * -1)) * (enc[0] - posIzqFin)) - k;
-					msg.data[1] = msg.data[0];
-					printf("\n\t3.\n\tMizq = %f [cm]\n\tMder = %f [cm]",msg.data[0],msg.data[1]);
-					pubVelMotor.publish(msg);
+					msgL.data = -(((vm - k) / (delta * 0.33333 * -1)) * (enc[0] - posIzqFin)) - k;
+					msgR.data = msgL.data;
+					printf("\n\t3.\n\tMizq = %f [cm]\n\tMder = %f [cm]",msgL.data,msgR.data);
+					pubVelMotorIzq.publish(msgL);									
+					pubVelMotorDer.publish(msgR);
 					ros::spinOnce();
 					rate.sleep();
 				}
@@ -417,9 +442,10 @@ int main(int argc, char ** argv){
 
 			/*----------------------------Reset de encoders----------------------------*/	
 			for(int i = 0; i<10 ; i++){
-				msg.data[0] = 0.0;
-				msg.data[1] = 0.0;
-				pubVelMotor.publish(msg);
+				msgL.data = 0.0;
+				msgR.data = 0.0;
+				pubVelMotorIzq.publish(msgL);									
+				pubVelMotorDer.publish(msgR);
 				ros::spinOnce();
 				rate.sleep();
 			}

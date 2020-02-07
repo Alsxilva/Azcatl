@@ -9,7 +9,7 @@ Septiembre 2019
 #include <std_msgs/Int8.h>
 #include <std_msgs/Int64.h>  
 #include <std_msgs/Int16MultiArray.h> 
-#include <std_msgs/Float32MultiArray.h> 
+#include <std_msgs/Float32.h> 
 
 /*--------------------------Pines--------------------------*/
 
@@ -120,17 +120,13 @@ volatile float outputFunc_R = 0;
 
 //----------------------Funcion que recibe las velocidades----------------------
 
-void speedsCallback(const std_msgs::Float32MultiArray& msg){
-  if(msg.data_length < 2){
-     referenceFuncValue_L = 0;
-     referenceFuncValue_R = 0;
-     return;
-  }else{
-    referenceFuncValue_L = msg.data[0];     //Valores que vienen desde nodo del algoritmo de comportamiento
-    referenceFuncValue_R = msg.data[1];     //data[0] -> izquierdo ---------- data[1] -> derecho
-  }
-  velocidadder = fabs(referenceFuncValue_R);
+void speedLCallback(const std_msgs::Float32& msgL){
+  referenceFuncValue_L = msgL.data;     //Valores que vienen desde nodo del algoritmo de co                                 mportamiento
   velocidadizq = fabs(referenceFuncValue_L); 
+}
+void speedRCallback(const std_msgs::Float32& msgR){
+  referenceFuncValue_R = msgR.data;     //Valores que vienen desde nodo del algoritmo de co                                 mportamiento
+  velocidadder = fabs(referenceFuncValue_R); 
 }
 
 //----------------------Funciones que reciben las constantes para el PID----------------------
@@ -459,7 +455,8 @@ std_msgs::Int16MultiArray photoSensors;
 ros::Publisher pubEncoIzq("/encoIzq", &encoderIzq);
 ros::Publisher pubEncoDer("/encoDer", &encoderDer);
 ros::Publisher pubSensors("/photoSensors",&photoSensors);
-ros::Subscriber<std_msgs::Float32MultiArray> subSpeeds("/motor_speeds", &speedsCallback);
+ros::Subscriber<std_msgs::Float32> subSpeedL("/motor_speedIzq", &speedLCallback);
+ros::Subscriber<std_msgs::Float32> subSpeedR("/motor_speedDer", &speedRCallback);
 ros::Subscriber<std_msgs::Int8> subKpPid("/kpPID", &kpCallback);
 //ros::Subscriber<std_msgs::Int8> subKdPid("/kdPID", &kdCallback);
 //ros::Subscriber<std_msgs::Int8> subKiPid("/kiPID", &kiCallback);
@@ -471,10 +468,11 @@ void setup() {
   nh.advertise(pubSensors);
   nh.advertise(pubEncoIzq);
   nh.advertise(pubEncoDer); 
-  nh.subscribe(subKpPid);  
+  //nh.subscribe(subKpPid);  
   //nh.subscribe(subKdPid);  
   //nh.subscribe(subKiPid); 
-  nh.subscribe(subSpeeds);
+  nh.subscribe(subSpeedL);
+  nh.subscribe(subSpeedR);
   photoSensors.data_length = 8; 
   
   //Encoders
