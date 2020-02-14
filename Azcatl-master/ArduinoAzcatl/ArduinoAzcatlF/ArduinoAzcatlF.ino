@@ -121,11 +121,11 @@ volatile float outputFunc_R = 0;
 //----------------------Funcion que recibe las velocidades----------------------
 
 void speedLCallback(const std_msgs::Float32& msgL){
-  referenceFuncValue_L = msgL.data;     //Valores que vienen desde nodo del algoritmo de co                                 mportamiento
+  referenceFuncValue_L = msgL.data;     //Valores que vienen desde nodo del algoritmo de comportamiento                                mportamiento
   velocidadizq = fabs(referenceFuncValue_L); 
 }
 void speedRCallback(const std_msgs::Float32& msgR){
-  referenceFuncValue_R = msgR.data;     //Valores que vienen desde nodo del algoritmo de co                                 mportamiento
+  referenceFuncValue_R = msgR.data;     //Valores que vienen desde nodo del algoritmo de comportamiento                     mportamiento
   velocidadder = fabs(referenceFuncValue_R); 
 }
 
@@ -320,29 +320,29 @@ void calculoVelocidad(){
   }
 }
 
-//Definición de vari  ables para el PID derecho
+//----------Definición de variables para el PID derecho----------
 float P_R = 0;        //Acción proporcional
 float I_R = 0;        //Acción integral
 float D_R = 0;        //Acción derivativa
-float Kp_R = kp - 5;  //Constante proporcional  = 0.4
+//float Kp_R = kp * 0.875;  //Constante proporcional  = 0.4
 //float Ki_R = ki;      //Constante integral      = 0.025
 //float Kd_R = kd;      //Constante derivativa    = 2.9
-//float Kp_R = 35; 
-float Ki_R = 5;
-float Kd_R = 10;
+float Kp_R = 55; 
+float Ki_R = 0;
+float Kd_R = 0;
 float error_R = 0;
 float last_error_R = 0; 
 
-//Definición de variables para el PID izquierdo
+//----------Definición de variables para el PID izquierdo----------
 float P_L = 0;        //Acción Proporcional
 float I_L = 0;        //Acción Integral
 float D_L = 0;        //Acción Derivativa
-float Kp_I = kp;      //Constante proporcional  = 0.4
+//float Kp_I = kp;      //Constante proporcional  = 0.4
 //float Ki_I = ki;      //Constante integral      = 0.025
 //float Kd_I = kd;      //Constante derivativa    = 2.9
-//float Kp_I = 35;
-float Ki_I = 5;
-float Kd_I = 10;
+float Kp_I = 61;
+float Ki_I = 0;
+float Kd_I = 0;
 float error_L = 0;
 float last_error_L = 0; 
 
@@ -455,8 +455,8 @@ std_msgs::Int16MultiArray photoSensors;
 ros::Publisher pubEncoIzq("/encoIzq", &encoderIzq);
 ros::Publisher pubEncoDer("/encoDer", &encoderDer);
 ros::Publisher pubSensors("/photoSensors",&photoSensors);
-ros::Subscriber<std_msgs::Float32> subSpeedL("/motor_speedIzq", &speedLCallback);
-ros::Subscriber<std_msgs::Float32> subSpeedR("/motor_speedDer", &speedRCallback);
+ros::Subscriber<std_msgs::Float32> subSpeedL("/motorL_speed", &speedLCallback);
+ros::Subscriber<std_msgs::Float32> subSpeedR("/motorR_speed", &speedRCallback);
 ros::Subscriber<std_msgs::Int8> subKpPid("/kpPID", &kpCallback);
 //ros::Subscriber<std_msgs::Int8> subKdPid("/kdPID", &kdCallback);
 //ros::Subscriber<std_msgs::Int8> subKiPid("/kiPID", &kiCallback);
@@ -468,7 +468,7 @@ void setup() {
   nh.advertise(pubSensors);
   nh.advertise(pubEncoIzq);
   nh.advertise(pubEncoDer); 
-  //nh.subscribe(subKpPid);  
+  nh.subscribe(subKpPid);  
   //nh.subscribe(subKdPid);  
   //nh.subscribe(subKiPid); 
   nh.subscribe(subSpeedL);
@@ -538,7 +538,8 @@ void loop(){
    //data[9]=digitalRead(Cont_Izq);
    
   elecciongiro();
-  calculoVelocidad();
+  calculoVelocidad(); 
+  //nh.spinOnce();
   pid();
   rpmToPwm();
   

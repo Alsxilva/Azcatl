@@ -97,7 +97,7 @@ int main(int argc, char ** argv){
 		kpROS.data = kp;
 		kiROS.data = ki;	
 		kdROS.data = kd;	
-		//pubKpPid.publish(kpROS);			//Emite mensaje con las constantes para el PID
+		pubKpPid.publish(kpROS);			//Emite mensaje con las constantes para el PID
 		//pubKiPid.publish(kdROS);
 		//pubKdPid.publish(kiROS);
 		//ros::spinOnce();
@@ -186,7 +186,7 @@ int main(int argc, char ** argv){
 					//msgL.data = k + (3.0 * (vm - k) * (fabs(enc[0] - posIzq0)/(delta)));		//Las llantas del lado izquierdo giran hacia adelante
 				    //msgR.data = -msgL.data;													//mientras que las del lado derecho hacia atras.
 		       		//pubVelMotorIzq.publish(msgL);									
-					pubVelMotorDer.publish(msgR);														//Emite mensaje con la velocidad de los motores
+					//pubVelMotorDer.publish(msgR);												//Emite mensaje con la velocidad de los motores
 					
 					msgL.data = k + (3.0 * (vm - k) * (fabs(enc[0] - posIzq0)/(delta)));
 					msgR.data = -msgL.data;											
