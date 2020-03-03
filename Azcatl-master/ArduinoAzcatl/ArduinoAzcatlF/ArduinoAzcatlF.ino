@@ -22,7 +22,7 @@ Septiembre 2019
 #define PWM_MotorI   6  //Pin de los motores Izquierdos
 
 /*----------------------Encoders----------------------*/
-//Cada motor en llanta cuenta con variables en encoders. Ambar nos sirven para determinar las 2 direcciones
+//Cada motor en llanta cuenta con variables en encoders. Ambas nos sirven para determinar la cantidad de pulsos por revolución.
 //posibles del giro de llanta.
 
 //Motor 1 --> Enfrente Derecha
@@ -80,8 +80,8 @@ float RPM_der = 0;        //Revoluciones por minuto calculadas
 float RPM_izq = 0;        //Revoluciones por minuto calculadas
 float velocidadder = 0;
 float velocidadizq = 0;
-float velocidad_R = 0;  //Velocidad en [m/s]
-float velocidad_L = 0;  //Velocidad en [m/s]
+float velocidad_R = 0;    //Velocidad en [m/s]
+float velocidad_L = 0;    //Velocidad en [m/s]
 
 //----------------------Almacenaiento de pulsos de cada motor----------------------
 volatile long ContM1=0;
@@ -93,21 +93,21 @@ volatile long ContM6=0;
 
 //----------------------Variables para el cálculo de la velocidad----------------------
 
-int ratio = 1;                          //Relación de transmisión 
-float wheel_diameter  = 123.40/1000.0;  //Diámetro de la rueda pequeña[mm] //
+int ratio = 1;                                            //Relación de transmisión 
+float wheel_diameter  = 123.40/1000.0;                    //Diámetro de la rueda pequeña[mm]
 float wheel_circunference = wheel_diameter * 3.141592;    //Circunferencia de la rueda
-unsigned int pulsesPerWheel_Spin = 3200;      //Número de pulsos por vuelta desde el encoder de cada motor, por canal = 3267.  //Checar si eran 1600. Recuerdo eran 3200 con el RISING.
-unsigned long timeold = 0;                    //Variable de tiempo antigua relativa
+unsigned int pulsesPerWheel_Spin = 3200;                  //Número de pulsos por vuelta desde el encoder de cada motor, por canal = 3267.  //Checar si eran 1600. Recuerdo eran 3200 con el RISING.
+unsigned long timeold = 0;                                //Variable de tiempo antigua relativa
 long long int encoDerAvg, encoIzqAvg, totalIzq, totalDer;
 
 //------Definición de las señales de error, control y la salida del sistema para el control del PID------
 
-float inputUtFunc_R = 0;             //Salida del accionador, pasando ya por PID derecho en [m/s]
-float inputUtFunc_L = 0;            //          ""                ""           izquierdo en [m/s]
+float inputUtFunc_R = 0;            //Salida del accionador, pasando ya por PID derecho en [m/s]
+float inputUtFunc_L = 0;            //          ""                ""          izquierdo en [m/s]
 float referenceFunc_R = 0;          //Entrada al PID derecho en [m/s]
-float referenceFunc_L = 0;          //      ""       izquierdo en [m/s]
+float referenceFunc_L = 0;          //      ""     izquierdo en [m/s]
 float referenceFuncValue_R = 0;     //Valor de entrada al PID derecho en [m/s] deseado desde usuario
-float referenceFuncValue_L = 0;     //          ""            izquierdo en [m/s] 
+float referenceFuncValue_L = 0;     //          ""          izquierdo en [m/s] 
 float kpRef = 0;
 float kdRef = 0;
 float kiRef = 0;      
@@ -133,15 +133,15 @@ void speedRCallback(const std_msgs::Float32& msgR){
 
 void kpCallback(const std_msgs::Int8& msg){
   kp = msg.data;        
-  printf("%f",kp);                  
+  //printf("%f",kp);                  
 }
 void kdCallback(const std_msgs::Int8& msg){
   kd = msg.data;        
-  printf("%f",kd);                  
+  //printf("%f",kd);                  
 }
 void kiCallback(const std_msgs::Int8& msg){
   ki = msg.data;        
-  printf("%f",ki);                  
+  //printf("%f",ki);                  
 }
 
 //----------------------Contador de pulsos del encoder 1----------------------
@@ -372,8 +372,8 @@ void pid(){
 
   //--------------------------------Right PID--------------------------------
 
-  outputFunc_R = velocidad_R;                         //Funcion de salida Real  [m/s]
-  referenceFunc_R = velocidadder;                     //Funcion Deseada  [m/s]
+  outputFunc_R = velocidad_R;                         //Funcion de salida Real leída desde encoder [m/s]
+  referenceFunc_R = velocidadder;                     //Funcion Deseada desde nodo de comportamiento [m/s]
   error_R = referenceFunc_R - outputFunc_R - Rplus;   //Cálculo del error total. Se agrega el error ente llantas
 
   P_R = Kp_R * error_R;                                                               //Acción proporcional
@@ -497,7 +497,7 @@ void setup() {
   pinMode(MotorI_A,OUTPUT);
   pinMode(MotorI_A,OUTPUT);
   
-  //Interrupciones
+  //Interrupciones: CHANGE to trigger the interrupt whenever the pin changes value
   attachInterrupt(0,encoderM1aEvent,CHANGE); //Int0 =Enc_M1A = pin2
   attachInterrupt(1,encoderM2aEvent,CHANGE); //Int1 =Enc_M2A = pin3
   attachInterrupt(5,encoderM3aEvent,CHANGE); //Int5 =Enc_M3A = pin18
@@ -553,7 +553,7 @@ void loop(){
   digitalWrite(MotorI_A, MI_A);  //Motores Izquierda
   digitalWrite(MotorI_B, MI_B);
 
-  analogWrite(PWM_MotorD, pwm_D);
+  analogWrite(PWM_MotorD, pwm_D); //Funcion de arduino escribe en los motores la señal en Pulsos por minuto.
   analogWrite(PWM_MotorI, pwm_I);
 
   totalDer += encoDerAvg;
