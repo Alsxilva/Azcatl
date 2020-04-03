@@ -43,8 +43,8 @@ void callbackIzq(const std_msgs::Int64::ConstPtr& msg){
 
 int main(int argc, char ** argv){
 	ros::init(argc, argv, "simple_move_2");	//Inicio de ROS. Necesarios Argc y Argv. Tercer argumento: nombre del nodo.
-	ros::NodeHandle nh;							//Manipulador de nodos: nodo publico 
-	ros::Rate rate(20);							//Tasa-cantidad de frecuencia 
+	ros::NodeHandle nh;						//Manipulador de nodos: nodo publico 
+	ros::Rate rate(20);						//Tasa-cantidad de frecuencia 
 	
 	/*------------------------------------Se instancian subscriptores y publicadores------------------------------------*/	
 							
