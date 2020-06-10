@@ -474,6 +474,8 @@ void setup() {
   nh.subscribe(subSpeedL);
   nh.subscribe(subSpeedR);
   photoSensors.data_length = 8; 
+
+  nh.spinOnce();
   
   //Encoders
   pinMode(Enc_M1A,INPUT);
