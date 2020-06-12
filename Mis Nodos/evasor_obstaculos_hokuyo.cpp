@@ -242,7 +242,8 @@ int main(int argc, char ** argv){
 		int num = -1;				//Numero que se elevará a la potencia -pot- y determinara el sentido del giro
 		
 		int total_steps, step=0;
-		printf( "\033[2J\033[1;1H" );			
+		printf( "\033[2J\033[1;1H" );		
+		printf("\n------------------------ Evasor de Obstaculos -------------------------");	
 		printf("\n-------------------------------- START --------------------------------",step+1,total_steps);
 		printf("\n\nIntroduzca:\n\nEl numero de pasos deseado [entero]: ");
 		scanf("%d",&total_steps);
@@ -798,6 +799,8 @@ int main(int argc, char ** argv){
 				//ros::Duration(1.0).sleep();				//Duerme al robot por un segundo
  			}	
 		}
+		printf("\n\n\n--------------------------- TERMINE PASOS ----------------------------");
+		ros::Duration(2.0).sleep();
 	}
 	return 0;
 }
