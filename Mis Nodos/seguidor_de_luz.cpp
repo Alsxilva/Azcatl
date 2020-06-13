@@ -70,7 +70,7 @@ void callbackPhotosensors(const std_msgs::Float32MultiArray::ConstPtr &msg){
 		case 1: 
 			for (i=0; i<8; i++){
 				if (photosensors[i] < 5){
-						printf("\n\n--->ERROR: checar resistencia: %d\n--->Posible falso contacto",i);
+						printf("\n\n--->ERROR: checar resistencia: %d\n--->Posible falso contacto o muy poca luz en cuarto",i);
 						total_steps = 0;	
 				}
 				else if (photosensors[i] > intensidad_debil && photosensors[i] < intensidad_media)
@@ -81,7 +81,7 @@ void callbackPhotosensors(const std_msgs::Float32MultiArray::ConstPtr &msg){
 		case 2:
 			for (i=0; i<8; i++){
 					if (photosensors[i] < 5){
-						printf("\n\n--->ERROR: checar resistencia: %d\n--->Posible falso contacto",i);
+						printf("\n\n--->ERROR: checar resistencia: %d\n--->Posible falso contacto o muy poca luz en cuarto",i);
 						total_steps = 0;	
 					}
 					else if (photosensors[i] > intensidad_media && photosensors[i] < intensidad_alta)
@@ -92,7 +92,7 @@ void callbackPhotosensors(const std_msgs::Float32MultiArray::ConstPtr &msg){
 		case 3:
 			for (i=0; i<8; i++){
 				if (photosensors[i] < 5){
-						printf("\n\n--->ERROR: checar resistencia: %d\n--->Posible falso contacto",i);
+						printf("\n\n--->ERROR: checar resistencia: %d\n--->Posible falso contacto o muy poca luz en cuarto",i);
 						total_steps = 0;	
 				}
 				else if (photosensors[i] > intensidad_alta && photosensors[i] < intensidad_muy_alta)
@@ -103,7 +103,7 @@ void callbackPhotosensors(const std_msgs::Float32MultiArray::ConstPtr &msg){
 		case 4:
 			for (i=0; i<8; i++){
 				if (photosensors[i] < 5){
-						printf("\n\n--->ERROR: checar resistencia: %d\n--->Posible falso contacto",i);
+						printf("\n\n--->ERROR: checar resistencia: %d\n--->Posible falso contacto o muy poca luz en cuarto",i);
 						total_steps = 0;	
 				}
 				else if (photosensors[i] > intensidad_muy_alta && photosensors[i] < intensidad_maxima)
@@ -270,38 +270,38 @@ int main(int argc, char ** argv){
 	                else{
 						dist = distancia_usuario;
                         if  (posicion_luz == 4){			// Luz Adelante Izquierda
+                            printf("\n\n----->Luz al Frente-Centro");                          
                   		    data_photosensors();
 	               			angle = 0;
-                            printf("\n\n----->Luz Adelante al centro \t\t");                          
                             next_state = 7;
                             break;
                         }
                         else if(posicion_luz == 3){			// Luz Adelante Izquierda
+                            printf("\n\n----->Luz al Frende-Izquierda");                          
                   		    data_photosensors();
 	               			angle = 0;
-                            printf("\n\n----->Luz Adelante Izquierda \t\t");                          
                             next_state = 1;
                             break;
                         }
                         else if (posicion_luz == 2){		// Luz Adelante Derecha
+                            printf("\n\n----->Luz al Frente-Derecha");
                             data_photosensors();
                             angle = 0;
-                            printf("\n\n----->Luz Adelante Derecha \t\t");
                             next_state = 2;
                             break;
                         }
                         else if (posicion_luz == 1){		// Luz Atras Izquierda
+                            printf("\n\n----->Luz Atras Izquierda");
                             data_photosensors();
                             angle = 0;
-                            printf("\n\n----->Luz Atras Izquierda \t\t");
                             next_state = 3;
                             break;
                         }
                         else if (posicion_luz == 0){		//Luz Atras Derecha
+                        	printf("\n\n-----> Luz Atras Derecha");
                         	data_photosensors();
                         	dist = 0;
                         	angle = 0;
-                        	printf("\n\n-----> Luz Atras Derecha \t\t");
                         	next_state = 5;
                         	break;
                         }	
@@ -324,7 +324,9 @@ int main(int argc, char ** argv){
  				/*---------------------------Luz Frente Izquierda---------------------------*/
 
 		        case 1: 			// Giro izquierdo
-	                printf("\n\n--->Case 1: giro izquierdo");
+	                printf("\n\n----->Luz al Frente-Izquierda");                          
+                  	data_photosensors();
+	               	printf("\n\n--->Case 1: giro izquierdo");
 	                angle = angulo_usuario;
 					dist = 0;
 	                next_state = 0;
@@ -334,6 +336,8 @@ int main(int argc, char ** argv){
 	            /*---------------------------Luz Frente Derecha---------------------------*/
 
 		        case 2: 			// Giro derecho
+	                printf("\n\n----->Luz al Frente-Derecha");
+	                data_photosensors();
 	                printf("\n\n--->Case 2: giro derecho");
 	                angle = -angulo_usuario;
 					dist = 0;
@@ -344,6 +348,8 @@ int main(int argc, char ** argv){
 	            /*---------------------------Luz Detras Izquierda---------------------------*/
 
 		        case 3: 			// Giro izquierdo
+		       		printf("\n\n----->Luz Atras Izquierda");
+	                data_photosensors();
 	                printf("\n\n--->Case 3: giro izquierdo");
 	                angle = angulo_usuario;
 					dist = 0;
@@ -351,6 +357,8 @@ int main(int argc, char ** argv){
 	                break;
 
 		        case 4:				// Giro izquierdo
+	                printf("\n\n----->Luz Atras Izquierda");
+	                data_photosensors();
 	                printf("\n\n--->Case 4: giro izquierdo");
 	                angle = angulo_usuario;
 					dist = 0;
@@ -361,6 +369,8 @@ int main(int argc, char ** argv){
 	            /*---------------------------Luz Detras Derecha---------------------------*/
 
 	            case 5: 			// Giro derecho
+	           		printf("\n\n----->Luz Atras Derecha");
+	                data_photosensors();
 	                printf("\n\n--->Case 5: giro derecho");
 	                angle = -angulo_usuario;
 					dist = 0;
@@ -368,6 +378,8 @@ int main(int argc, char ** argv){
 	                break;
 
 		        case 6:				// Giro derecho
+		       		printf("\n\n----->Luz Atras Derecha");
+	                data_photosensors();
 	                printf("\n\n--->Case 6: giro derecho");
 	                angle = -angulo_usuario;
 					dist = 0;
@@ -378,6 +390,8 @@ int main(int argc, char ** argv){
 	 			/*---------------------------Luz Frente al Centro---------------------------*/
 
 		        case 7: 		// Avance
+		        	printf("\n\n----->Luz al Frente-Centro");
+	                data_photosensors();
 	                printf("\n\n--->Case 7: avance");
 	                angle = 0;
 					dist = distancia_usuario;
@@ -389,8 +403,8 @@ int main(int argc, char ** argv){
 
 			/*-----------------Inserción de valores: angulo de giro y distancia-----------------*/
 
-			angle *= -1.35;						//Factor de corrección.
-			dist  *= 0.784;						//Factor de corrección.
+			angle *= -1.9;						//Factor de corrección.
+			dist  *=  0.9;						//Factor de corrección.
 
 			/*--------------------------Giro--------------------------*/	
 

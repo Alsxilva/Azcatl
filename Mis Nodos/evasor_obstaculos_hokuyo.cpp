@@ -203,10 +203,10 @@ void data_hokuyo(){
 	//Imprime datos obtenidos dentro de los rangos definidos. 
 	//Imprimira "False" si dentro de esa region NO hay obstaculoTrue
 	//Imprimira "True " si dentro de esa region SI hay obstaculo
-	printf("\n\nUmbral:\t\t%.4f\t  [m]\tObstacle?",umbral);
-	printf("\nIzquierda:\t%.4f\t  [m]\t",	izquierdaOut); 	printf(izquierda_flag 	? "True" : "False");
-	printf("\nCentral:\t%.4f\t  [m]\t",		centralOut);	printf(central_flag 	? "True" : "False");
-	printf("\nDerecha:\t%.4f\t  [m]\t",		derechaOut);	printf(derecha_flag 	? "True" : "False");
+	printf("\n\nUmbral:\t\t%.4f\t\t[m]\tObstacle?",umbral);
+	printf("\nIzquierda:\t%.4f\t\t[m]\t",	izquierdaOut); 	printf(izquierda_flag 	? "True" : "False");
+	printf("\nCentral:\t%.4f\t\t[m]\t",		centralOut);	printf(central_flag 	? "True" : "False");
+	printf("\nDerecha:\t%.4f\t\t[m]\t",		derechaOut);	printf(derecha_flag 	? "True" : "False");
 	printf("\n");
 	//printf("\nCentral Izq:\t%.4f\t",	centralIzqOut); printf(centralIzq_flag 	? "False" : "True");
 	//printf("\nCentral Der:\t%.4f\t",	centralDerOut);	printf(centralDer_flag	? "False" : "True");
@@ -304,44 +304,44 @@ int main(int argc, char ** argv){
 	                else{
 	                	turnOn = false;
                         if		(posicion_obstaculo == 1){		
+                            printf("\n\n----->Obstaculo al frente");
                             data_hokuyo();
-                            printf("\n\n----->Obstaculo enfrente");
                             next_state = 5;
                             break;
                         }
                         else if (posicion_obstaculo == 2){		
-                            data_hokuyo();
                             printf("\n\n----->Obstaculo a la derecha");
+                            data_hokuyo();
                             next_state = 1;
                             break;
                         }
                         else if (posicion_obstaculo == 3){		
-                  		    data_hokuyo();
                             printf("\n\n----->Obstaculo enfrente y a la derecha");                          
+                  		    data_hokuyo();
                             next_state = 1;
                             break;
                         }
                         else if (posicion_obstaculo == 4){		
-                            data_hokuyo();
                             printf("\n\n----->Obstaculo a la izquierda");
+                            data_hokuyo();
                             next_state = 3;
                             break;
                         }
                         else if (posicion_obstaculo == 5){		
-                            data_hokuyo();
                             printf("\n\n----->Obstaculo enfrente y a la izquierda");
+                            data_hokuyo();
                             next_state = 3;
                             break;
                         }
                         else if (posicion_obstaculo == 6){		
-                            data_hokuyo();
                             printf("\n\n----->Obstaculo a la derecha e izquierda");
+                            data_hokuyo();
                             next_state = 5;
                             break;
                         }
                         else if (posicion_obstaculo == 7){		
-                            data_hokuyo();
                             printf("\n\n----->Obstaculo enfrente, derecha e izquierda");
+                            data_hokuyo();
                             next_state = 5;
                             break;
                         }
@@ -365,6 +365,7 @@ int main(int argc, char ** argv){
 				/*---------------------------Obstaculo en la derecha---------------------------*/
 					
 				case 1: 			// Reversa
+					printf("\n\n----->Obstaculo a la derecha");
                     data_hokuyo();
 	                printf("\n\n--->Case 1: Reversa\n");
 	                angle = 0;
@@ -374,6 +375,7 @@ int main(int argc, char ** argv){
                		break;
 
 		        case 2: 			// Giro izquierdo
+		        	printf("\n\n----->Obstaculo a la derecha");
                     data_hokuyo();
 	                printf("\n\n--->Case 2: Giro izquierdo\n");
 	                angle = angulo_usuario;
@@ -385,6 +387,7 @@ int main(int argc, char ** argv){
 	            /*---------------------------Obstaculo en la izquierda---------------------------*/
 
 		        case 3: 			// Reversa
+		        	printf("\n\n----->Obstaculo a la izquierda");
                     data_hokuyo();
 	                printf("\n\n--->Case 3: Reversa\n");
 	                angle = 0;
@@ -394,6 +397,7 @@ int main(int argc, char ** argv){
 	                break;
 
 		        case 4: 			// Giro derecho
+		        	printf("\n\n----->Obstaculo a la izquierda");
                     data_hokuyo();
 	                printf("\n\n--->Case 4: Giro derecho\n");
 	                angle = -angulo_usuario;
@@ -402,9 +406,10 @@ int main(int argc, char ** argv){
 	                step++;
 	                break;
 
-	            /*---------------------------Obstaculo enfrente---------------------------*/
+	            /*---------------------------Obstaculo al frente---------------------------*/
 
 		        case 5: 			// Reversa
+		        	printf("\n\n----->Obstaculo al frente");
                     data_hokuyo();
 	                printf("\n\n--->Case 5: Reversa\n");
 	                angle = 0;
@@ -416,6 +421,7 @@ int main(int argc, char ** argv){
 	                break;
 
 		        case 6: 			// Giro aleatorio
+		        	printf("\n\n----->Obstaculo al frente");
                     data_hokuyo();
 	                printf("\n\n--->Case 6: Giro");
 	                angle = angulo_usuario * num;
@@ -428,6 +434,7 @@ int main(int argc, char ** argv){
 	                break;
 
 		        case 7:				// Giro aleatorio
+		        	printf("\n\n----->Obstaculo al frente");
                     data_hokuyo();
                     printf("\n\n--->Case 7: Giro");
 	                angle = angulo_usuario * num;
@@ -441,6 +448,7 @@ int main(int argc, char ** argv){
 	                break;
 
 		        case 8: 			// Avanza
+		        	printf("\n\n----->Obstaculo al frente");
                     data_hokuyo();
 	                printf("\n\n--->Case 8: Avanza\n");
 	                angle = 0;
@@ -449,6 +457,7 @@ int main(int argc, char ** argv){
 	                break;
 
 		        case 9: 			// Giro contrario al aleatorio
+		        	printf("\n\n----->Obstaculo al frente");
                     data_hokuyo();
 	                angle = angulo_usuario * -num;
 	                printf("\n\n--->Case 9: Giro");
@@ -461,6 +470,7 @@ int main(int argc, char ** argv){
 	                break;
 
 		        case 10: 			// Giro contrario al aleatorio
+		        	printf("\n\n----->Obstaculo al frente");
 	                data_hokuyo();
 	                angle = angulo_usuario * -num;
 	                printf("\n\n--->Case 10: Giro");
@@ -479,7 +489,7 @@ int main(int argc, char ** argv){
 	 			/*-----------------Inserción de valores: angulo de giro y distancia-----------------*/
 
 				angle *= -1.9;						//Factor de corrección.
-				dist  *=  0.9;						//encFactor de corrección.
+				dist  *=  0.9;						//Factor de corrección.
 
 				/*--------------------------Giro--------------------------*/	
 
