@@ -64,8 +64,9 @@ bool central_flag, centralDer_flag, centralIzq_flag, derecha_flag, izquierda_fla
 void callbackHokuyo(const sensor_msgs::LaserScan::ConstPtr &msg){
 
 	int size = ceil((msg -> angle_max - msg -> angle_min) / msg -> angle_increment);	//Redondea al entero de arriba mas cercano. 
-																						//En especifico, redondea a un numero entero el numero de lecturas 
-	float sumLeft  = 0;																	//"disponibles" del hokuyoque se mandan desde el nodo "hokuyo_node.py"							
+	//	size = ceil(593.8181818) = 594 lecturas											//En especifico, redondea a un numero entero el numero de lecturas 
+																						//"disponibles" del hokuyoque se mandan desde el nodo "hokuyo_node.py"							
+	float sumLeft  = 0;																	
 	float sumFront = 0;	
 	float sumRight = 0;	
 	float values[size];
@@ -194,7 +195,7 @@ void callbackHokuyo(const sensor_msgs::LaserScan::ConstPtr &msg){
 	
 
 	/*---------------------------EndRangos---------------------------*/	
-
+	printf("\n\nLecturas (size) = %d",size)
 	hokuyoFlag = true;
 }
 

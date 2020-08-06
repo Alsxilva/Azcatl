@@ -53,10 +53,10 @@ def hokuyo_data():
 
     #---------Caracteristicas del laser "Hokuyo"---------
     
-    angular_resolution  = 0.352
-    msg_laser.range_min = 0.0199999
-    msg_laser.range_max = 5.5999999 
-    msg_laser.header.frame_id = "laser"
+    angular_resolution  = 0.352         
+    msg_laser.range_min = 0.0199999         # Distancia mínima de detección de obstáculos
+    msg_laser.range_max = 5.5999999         # Distancia máxima de detección de obstáculos
+    msg_laser.header.frame_id = "laser"                                 # Datos en [Radianes] 
     msg_laser.angle_increment = angular_resolution / 57.29              #  0.352 / 57.29 = 0.006144178739745
     msg_laser.angle_min = (-120 + (44 * angular_resolution)) / 57.29    # -120 + (15.488) / 57.29 = -104.512 / 57.29 = -1.824262524000698
     msg_laser.angle_max = ( 120 - (44 * angular_resolution)) / 57.29    #  120 - (15.488) / 57.29 =  104.512 / 57.29 =  1.824262524000698
@@ -64,6 +64,7 @@ def hokuyo_data():
 
 def hokuyo():
     print "\n__________Start Hokuyo Node by Edd_________________\n"
+    print "Data leng: ", len(data)
     rospy.init_node('hokuyo_node', anonymous=True)
     pub_laser_rages = rospy.Publisher('/scan', LaserScan, queue_size=10)
     rate = rospy.Rate(10) 
