@@ -60,8 +60,8 @@ def hokuyo_data():
     msg_laser.angle_increment = angular_resolution / 57.29              #  0.352 / 57.29 = 0.006144178739745
     msg_laser.angle_min = (-120 + (44 * angular_resolution)) / 57.29    # -120 + (15.488) / 57.29 = -104.512 / 57.29 = -1.824262524000698
     msg_laser.angle_max = ( 120 - (44 * angular_resolution)) / 57.29    #  120 - (15.488) / 57.29 =  104.512 / 57.29 =  1.824262524000698
-    return msg_laser
-
+    return msg_laser                                                    # En angle_min y angle_max le quitan 44 lecturas por cada costado al Hokuyo
+                                                                        # lo que resulta en 15.488° menos por lado. Queda 209.024° de visibilidad = 694 lecturas
 def hokuyo():
     print "\n__________Start Hokuyo Node by Edd_________________\n"
     print "Data leng: ", len(data)

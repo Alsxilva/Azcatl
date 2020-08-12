@@ -84,10 +84,10 @@ void callbackHokuyo(const sensor_msgs::LaserScan::ConstPtr &msg){
 
 	int centrali[2];
 	centralOut = 0;
-	float central[]  = {10,20};		//Rangos para la region central -> Checar documento "Estructura del robot".
+	float central[]  = {-15,15};		//Rangos para la region central -> Checar documento "Estructura del robot".
 		
-	centrali[0] = floor((((pi * central[0]) / 180.0) - msg->angle_min) / (msg->angle_increment));	//floor((((pi * 10) / 180) - 1.824262524000698) / 0.006144178739745) = floor(-268.5028657) = -268
-	centrali[1] = floor((((pi * central[1]) / 180.0) - msg->angle_min) / (msg->angle_increment));	//floor((((pi * 20) / 180) - 1.824262524000698) / 0.006144178739745) = floor(-240.0966404) = -240
+	centrali[0] = floor((((pi * central[0]) / 180.0) - msg->angle_min) / (msg->angle_increment));	//floor((((pi * -15) / 180) - 1.824262524000698) / 0.006144178739745) = floor(-339.5184288) = -339
+	centrali[1] = floor((((pi * central[1]) / 180.0) - msg->angle_min) / (msg->angle_increment));	//floor((((pi *  15) / 180) - 1.824262524000698) / 0.006144178739745) = floor(-254.2997530) = -254
 				//Funcion "floor" redondea al entero de abajo mas cercano
 				//Esta fracción de codigo se encarga de transformar el ángulo de visión deseado por región a un número (en radianes) para que el hokuyo sea capaz de leerlo.
 	
@@ -98,52 +98,16 @@ void callbackHokuyo(const sensor_msgs::LaserScan::ConstPtr &msg){
 	central_flag = false;
 	
 	if(centralOut < umbral)
-		central_flag = true;
-	
-	/*---------------------------Region Central-Izquierda---------------------------*/
-
-	/*int centralIzqi[2];
-	float centralIzqOut = 0;
-	float centralIzq[]  = {20,30};	//Rangos para la region Izquierda -> Checar documento "Estructura del robot".
-	
-	centralIzqi[0] =  ceil((((pi * centralIzq[0]) / 180.0) - msg->angle_min) / (msg->angle_increment));	// ceil((((pi * 20) / 180) - 1.824262524000698) / 0.006144178739745) = 	ceil(-240.0966404) = -241; ceil() para no tomar los mismos valores que en la region anterior
-	centralIzqi[1] = floor((((pi * centralIzq[1]) / 180.0) - msg->angle_min) / (msg->angle_increment));	//floor((((pi * 30) / 180) - 1.824262524000698) / 0.006144178739745) = floor(-211.6904152) = -211
-	
-	for(int i = centralIzqi[0]; i < centralIzqi[1] ; i++)	
-		centralIzqOut += values[i];
-
-	centralIzqOut /= (float)(centralIzqi[1] - centralIzqi[0]);
-	centralIzq_flag = false;
-	
-	if(centralIzqOut < umbral)
-		centralIzq_flag = true;
-	
-	/*---------------------------Region Central-Derecha---------------------------*/
-
-	/*int centralDeri[2];
-	float centralDerOut = 0;
-	float centralDer[]  = {0,10};	//Rangos para la region derecha -> Checar documento "Estructura del robot".
-
-	centralDeri[0] = floor((((pi * centralDer[0]) / 180.0) - msg->angle_min) / (msg->angle_increment));	//floor((((pi *  0) / 180) - 1.824262524000698) / 0.006144178739745) = floor(-296.9090909) = -296
-	centralDeri[1] = floor((((pi * centralDer[1]) / 180.0) - msg->angle_min) / (msg->angle_increment));	//floor((((pi * 10) / 180) - 1.824262524000698) / 0.006144178739745) = floor(-268.5028647) = -268
-
-	for(int i = centralDeri[0]; i<centralDeri[1] ; i++)	
-		centralDerOut += values[i];
-
-	centralDerOut /= (float)(centralDeri[1] - centralDeri[0]);
-	centralDer_flag = false;
-
-	if(centralDerOut < umbral)
-		centralDer_flag = true;
+		central_flag = true;<
 
 	/*---------------------------Region Izquierda---------------------------*/
 
 	int izquierdai[2];
 	izquierdaOut = 0;
-	float izquierda[] ={80,90};		//Rangos para la region izquierda -> Checar documento "Estructura del robot".
+	float izquierda[] ={45,75};		//Rangos para la region izquierda -> Checar documento "Estructura del robot".
 
-	izquierdai[0] = floor((((pi * izquierda[0]) / 180.0)-msg->angle_min) / (msg->angle_increment));		//floor((((pi * 80) / 180) - 1.824262524000698) / 0.006144178739745) = floor(-69.65928898) = -69
-	izquierdai[1] = floor((((pi * izquierda[1]) / 180.0)-msg->angle_min) / (msg->angle_increment));		//floor((((pi * 90) / 180) - 1.824262524000698) / 0.006144178739745) = floor(-41.25306374) = -41
+	izquierdai[0] = floor((((pi * izquierda[0]) / 180.0)-msg->angle_min) / (msg->angle_increment));		//floor((((pi * 45) / 180) - 1.824262524000698) / 0.006144178739745) = floor(-169.0810773) = -169
+	izquierdai[1] = floor((((pi * izquierda[1]) / 180.0)-msg->angle_min) / (msg->angle_increment));		//floor((((pi * 75) / 180) - 1.824262524000698) / 0.006144178739745) = floor(-83.86240161) = -83
 	
 	for(int i = izquierdai[0]; i < izquierdai[1] ; i++)	
 		izquierdaOut += values[i];
@@ -158,10 +122,10 @@ void callbackHokuyo(const sensor_msgs::LaserScan::ConstPtr &msg){
 
 	int derechai[2];
 	derechaOut = 0;
-	float derecha[] ={-50,-60}; 	//Rangos para la region derecha -> Checar documento "Estructura del robot".
+	float derecha[] ={-45,-75}; 	//Rangos para la region derecha -> Checar documento "Estructura del robot".
 		
-	derechai[0] = floor((((pi * derecha[0]) / 180.0)-msg->angle_min)/(msg->angle_increment));		//floor((((pi * -50) / 180) - 1.824262524000698) / 0.006144178739745) = floor(-438.9402171) = -438	
-	derechai[1] = floor((((pi * derecha[1]) / 180.0)-msg->angle_min)/(msg->angle_increment));		//floor((((pi * -60) / 180) - 1.824262524000698) / 0.006144178739745) = floor(-467.3464424) = -467
+	derechai[0] = floor((((pi * derecha[0]) / 180.0)-msg->angle_min)/(msg->angle_increment));		//floor((((pi * -45) / 180) - 1.824262524000698) / 0.006144178739745) = floor(-424.7371045) = -424	
+	derechai[1] = floor((((pi * derecha[1]) / 180.0)-msg->angle_min)/(msg->angle_increment));		//floor((((pi * -75) / 180) - 1.824262524000698) / 0.006144178739745) = floor(-509.9557802) = -509
 	
 	for(int i = derechai[1]; i < derechai[0] ; i++)	
 		derechaOut += values[i];
