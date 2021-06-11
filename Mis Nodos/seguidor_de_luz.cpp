@@ -64,6 +64,9 @@ void callbackPhotosensors(const std_msgs::Float32MultiArray::ConstPtr &msg){
 		photosensors[i] = msg -> data[i];		
 	}
 
+	if (photosensors[4] < 5	)	//La resistencia que se encuentra hasta atrás tiene baja sensibilidad, y en algunos casos marca ERROR cuando realmente no lo hay.
+		photosensors[4]= 5;
+
   	//printf("\n\n----->Datos de PR recibidos correctamente :)");	
 
   	switch(intensity){

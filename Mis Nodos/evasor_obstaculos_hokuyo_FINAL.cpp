@@ -47,9 +47,13 @@ void callbackIzq(const std_msgs::Int64::ConstPtr& msg){
 #define minRange  -80								
 #define intervalRange  10 		//Grados para cada intervalo
 
+int nuSamples;	 				//Numero de muestras que muestrearemos para detectar el obstaculo mas delgado
+int truReadings = 0;				//Contador para obstaculos
 int posicion_obstaculo;			//Indica la posicion del obstaculo
-float umbral;						//Rango para determinar si se encuentra un obstaculo en determinada posicion
-float umbral_usuario;				
+float umbral;					//Rango para determinar si se encuentra un obstaculo en determinada posicion
+float umbral_usuario;		
+float degrees_to_Sample;		//Grados a muestrear para el obstaculo mas delgado con base a la distancia a la que se encuentre y a su ancho
+float obstacle_Width;			//Ancho del obstáculo más delgado a detectar	
 float promLeft  =	 0;
 float promRight =	 0;
 float promFront =	 0;
@@ -91,14 +95,19 @@ void callbackHokuyo(const sensor_msgs::LaserScan::ConstPtr &msg){
 				//Funcion "floor" redondea al entero de abajo mas cercano
 				//Esta fracción de codigo se encarga de transformar el ángulo de visión deseado por región a un número (en radianes) para que el hokuyo sea capaz de leerlo.
 	
-	for(int i = centrali[0]; i < centrali[1]; i++)	
-		centralOut += values[i];
-	
-	centralOut /= (float)(centrali[1] - centrali[0]);
-	central_flag = false;
-	
-	if(centralOut < umbral)
-		central_flag = true;<
+	for(int i = centrali[0]; i < centrali[1]; i++){
+		if (values[i] <= umbral)
+			truReadings ++;
+		else 
+			truReadings = 0;
+		if (truReadings >= nuSamples){
+			central_flag = true;
+			truReadings = 0;
+			break;
+		}
+		else
+			central_flag = false;
+	}
 
 	/*---------------------------Region Izquierda---------------------------*/
 
@@ -109,14 +118,19 @@ void callbackHokuyo(const sensor_msgs::LaserScan::ConstPtr &msg){
 	izquierdai[0] = floor((((pi * izquierda[0]) / 180.0)-msg->angle_min) / (msg->angle_increment));		//floor((((pi * 45) / 180) - 1.824262524000698) / 0.006144178739745) = floor(-169.0810773) = -169
 	izquierdai[1] = floor((((pi * izquierda[1]) / 180.0)-msg->angle_min) / (msg->angle_increment));		//floor((((pi * 75) / 180) - 1.824262524000698) / 0.006144178739745) = floor(-83.86240161) = -83
 	
-	for(int i = izquierdai[0]; i < izquierdai[1] ; i++)	
-		izquierdaOut += values[i];
-	
-	izquierdaOut /= (float)(izquierdai[1] - izquierdai[0]);
-	izquierda_flag = false;
-	
-	if(izquierdaOut < umbral)
-		izquierda_flag = true;
+	for(int i = izquierdai[0]; i < izquierdai[1] ; i++){
+		if (values[i] <= umbral)
+			truReadings ++;
+		else 
+			truReadings = 0;
+		if (truReadings >= nuSamples){
+			izquierda_flag = true;
+			truReadings = 0;
+			break;
+		}
+		else
+			izquierda_flag = false;
+	}
 
 	/*---------------------------Region Derecha---------------------------*/
 
@@ -127,14 +141,19 @@ void callbackHokuyo(const sensor_msgs::LaserScan::ConstPtr &msg){
 	derechai[0] = floor((((pi * derecha[0]) / 180.0)-msg->angle_min)/(msg->angle_increment));		//floor((((pi * -45) / 180) - 1.824262524000698) / 0.006144178739745) = floor(-424.7371045) = -424	
 	derechai[1] = floor((((pi * derecha[1]) / 180.0)-msg->angle_min)/(msg->angle_increment));		//floor((((pi * -75) / 180) - 1.824262524000698) / 0.006144178739745) = floor(-509.9557802) = -509
 	
-	for(int i = derechai[1]; i < derechai[0] ; i++)	
-		derechaOut += values[i];
-	
-	derechaOut /= (float)(derechai[0] - derechai[1]);
-	derecha_flag = false;
-	
-	if(derechaOut < umbral)
-		derecha_flag = true;
+	for(int i = derechai[1]; i < derechai[0] ; i++){
+		if (values[i] <= umbral)
+			truReadings ++;
+		else 
+			truReadings = 0;
+		if (truReadings >= nuSamples){
+			derecha_flag = true;
+			truReadings = 0;
+			break;
+		}
+		else
+			derecha_flag = false;
+	}
 
 	/*---------------------------Posicion de obstaculo---------------------------*/	
 
@@ -160,7 +179,7 @@ void callbackHokuyo(const sensor_msgs::LaserScan::ConstPtr &msg){
 	
 
 	/*---------------------------EndRangos---------------------------*/	
-	printf("\n\nLecturas (size) = %d",size)
+	//printf("\n\nLecturas (size) = %d",size);
 	hokuyoFlag = true;
 }
 
@@ -219,23 +238,12 @@ int main(int argc, char ** argv){
 		scanf("%f",&distancia_usuario);
 		printf("Distancia a detectar los obstaculos [cm]: ");
 		scanf("%f",&umbral_usuario);
-
-		/*int prueba = 1;
-		while(prueba==1){
-			hokuyoFlag = false;						//Bandera para detectar la conexion con el hokuyo
-			printf("\n\nEsperando a Hokuyo.");
-			
-			while(!hokuyoFlag && ros::ok()){
-				printf("..");					//Imprimira ".." mientras espera respuesta de Hokuyo
-				ros::spinOnce();
-				rate.sleep();
-			} 
-			data_hokuyo();
-		}
-
-		umbral = (umbral_usuario/100)/0.75;
-		*/
+		printf("Ancho del obstaculo mas delgado a detectar [cm]: ");
+		scanf("%f",&obstacle_Width);
 		
+		degrees_to_Sample = (obstacle_Width * 360) / (2 * pi * umbral_usuario);
+		nuSamples = floor(degrees_to_Sample / 0.352);
+
 		umbral = umbral_usuario/100;
 		step = 0;
 		int next_state = 0;				//Inicia maquina de estados
