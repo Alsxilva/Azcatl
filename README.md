@@ -12,5 +12,5 @@ Dr. Jesús Savage Carmona
 ## Colaboradores pasados del proyecto
 * Medrano Albarrán Gerardo 
 * Merino Texta Rogelio de Jesús
-* Silva Guzmá Edgar Roberto
+* Silva Guzmán Edgar Roberto
 
